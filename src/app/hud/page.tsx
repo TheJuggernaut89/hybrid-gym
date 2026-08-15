@@ -107,11 +107,11 @@ export default async function HudPage() {
         {/* ── primary actions ───────────────────────────────────────────── */}
         <div className="rule-grid grid-cols-2 border-b border-edge">
           <Link
-            href="/log"
+            href="/train"
             className="flex min-h-[60px] items-center justify-center gap-2 bg-gold px-3 font-mono text-data font-bold uppercase tracking-[0.14em] text-canvas [touch-action:manipulation]"
           >
             <PlusSquare size={16} />
-            Log a session
+            Train
           </Link>
           <Link
             href="/fuel"

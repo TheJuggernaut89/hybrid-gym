@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react';
 import { Check, ScanLine } from 'lucide-react';
 import {
   RPE_ANCHORS,
+  sessionTypeFor,
   SESSION_TYPES,
   anchorFor,
   sessionLoad,
@@ -26,10 +27,27 @@ import { cn } from '@/lib/utils';
  * Three taps: what, how long, how hard. Duration and RPE are pre-filled from
  * the modality, so the common case is type -> confirm.
  */
-export function LogClient() {
+export interface LogPrefill {
+  /** SESSION_TYPES id, chosen by the plan. */
+  sessionType: string;
+  /** e.g. "Leg day" — carried through so the session is named, not just typed. */
+  label?: string;
+}
+
+export function LogClient({
+  prefill,
+  onDone,
+}: {
+  prefill?: LogPrefill | null;
+  onDone?: () => void;
+} = {}) {
   const [pending, startTransition] = useTransition();
-  const [type, setType] = useState<SessionType | null>(null);
-  const [minutes, setMinutes] = useState(60);
+  const [type, setType] = useState<SessionType | null>(
+    prefill ? sessionTypeFor(prefill.sessionType) : null,
+  );
+  const [minutes, setMinutes] = useState(
+    (prefill ? sessionTypeFor(prefill.sessionType)?.defaultMin : null) ?? 60,
+  );
   const [rpe, setRpe] = useState(6);
   const [note, setNote] = useState('');
   const [done, setDone] = useState(false);
@@ -52,6 +70,7 @@ export function LogClient() {
         sessionType: type.id,
         durationMin: minutes,
         rpe,
+        label: prefill?.label,
       });
       setNote(r.message);
       setDone(r.ok);

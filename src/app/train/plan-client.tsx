@@ -1,10 +1,9 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useMemo, useState } from 'react';
 import { Check, ChevronLeft, Dumbbell, Users } from 'lucide-react';
 import gsap from 'gsap';
 import { FOCUS_DAYS, buildDay, type FocusDay } from '@/lib/workouts';
-import { logSession } from '@/app/actions/session';
 import { CTA } from '@/components/ui/cta';
 import { HazardBar } from '@/components/ui/industrial';
 import { ScreenNotice } from '@/components/health/screen-notice';
@@ -26,15 +25,24 @@ import { cn } from '@/lib/utils';
 export function PlanClient({
   conditions = [],
   todaysClasses = [],
+  onComplete,
 }: {
   conditions?: string[];
   todaysClasses?: Array<{ className: string; coachName: string; at: string }>;
+  /**
+   * Hands off to the logger with the session type and name already chosen.
+   *
+   * This used to call logSession itself with durationMin: 60 and rpe: 7
+   * HARDCODED, so every planned session recorded as exactly 420 AU regardless
+   * of what actually happened — and that number drives TEMPO, the calorie
+   * target and the load veto. Planning decides WHAT; only the member knows how
+   * long and how hard.
+   */
+  onComplete?: (sessionType: string, label: string) => void;
 }) {
   const [focus, setFocus] = useState<FocusDay | null>(null);
   const [stage, setStage] = useState<'prep' | 'work'>('prep');
   const [donePrep, setDonePrep] = useState<Set<string>>(new Set());
-  const [pending, startTransition] = useTransition();
-  const [logged, setLogged] = useState('');
 
   const plan = useMemo(() => (focus ? buildDay(focus) : null), [focus]);
 
@@ -53,7 +61,6 @@ export function PlanClient({
     setFocus(f);
     setStage('prep');
     setDonePrep(new Set());
-    setLogged('');
   }
 
   function togglePrep(name: string) {
@@ -67,19 +74,14 @@ export function PlanClient({
 
   function finish() {
     if (!plan) return;
-    startTransition(async () => {
-      const r = await logSession({
-        sessionType: plan.focus.groups.includes('combat')
-          ? 'combat'
-          : plan.focus.groups.includes('conditioning')
-            ? 'conditioning'
-            : 'lift',
-        durationMin: 60,
-        rpe: 7,
-        label: plan.focus.label,
-      });
-      setLogged(r.message);
-    });
+    onComplete?.(
+      plan.focus.groups.includes('combat')
+        ? 'combat'
+        : plan.focus.groups.includes('conditioning')
+          ? 'conditioning'
+          : 'lift',
+      plan.focus.label,
+    );
   }
 
   /* ── pick a focus ─────────────────────────────────────────────────── */
@@ -277,15 +279,9 @@ export function PlanClient({
         </section>
       ) : null}
 
-      {logged ? (
-        <section className="border border-engage bg-surface px-3 py-2.5">
-          <p className="font-sans text-read text-phosphor">{logged}</p>
-        </section>
-      ) : (
-        <CTA onClick={finish} disabled={pending} pulse>
-          {pending ? 'Logging…' : 'Done — log this session'}
-        </CTA>
-      )}
+      <CTA onClick={finish} pulse>
+        Done — record it
+      </CTA>
     </div>
   );
 }
