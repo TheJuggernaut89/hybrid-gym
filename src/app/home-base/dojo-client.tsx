@@ -6,6 +6,7 @@ import { Activity, AlertTriangle, Check, Play, Square, Timer } from 'lucide-reac
 import { Panel, PanelHeader } from '@/components/ui/panel';
 import { Button } from '@/components/ui/button';
 import { Meter, Stat } from '@/components/ui/stat';
+import { HazardBar } from '@/components/ui/industrial';
 import { AnatomyMap, AnatomyLegend } from '@/components/body/anatomy-map';
 import { ScreenNotice } from '@/components/health/screen-notice';
 import { screen } from '@/lib/contraindications';
@@ -516,8 +517,35 @@ export function DojoClient({
                   </p>
                 </div>
               )}
-              <Stat label="Engine" value={`${tracker.fps}`} unit="FPS" accent="neutral" />
+              <Stat
+                label="Engine"
+                value={`${tracker.fps}`}
+                unit={tracker.backend ? `FPS · ${tracker.backend}` : 'FPS'}
+                accent={tracker.stalled ? 'fight' : 'neutral'}
+              />
             </div>
+
+            {/* A stalled engine used to look identical to an empty room: black
+                frame, 0 FPS, no landmarks, no explanation, clock still running.
+                Errors were only rendered on the setup screen — which is not
+                where anyone is when it breaks. */}
+            {tracker.stalled || tracker.state === 'error' ? (
+              <section className="border border-fight bg-surface">
+                <HazardBar />
+                <div className="px-3 py-2.5">
+                  <div className="font-mono text-micro uppercase tracking-[0.18em] text-fight">
+                    {'>>'} Tracking is not running
+                  </div>
+                  <p className="mt-1.5 font-mono text-read text-phosphor">
+                    {tracker.error || 'The pose engine stopped returning frames.'}
+                  </p>
+                  <p className="mt-1.5 font-mono text-read text-dim">
+                    Your reps are not being counted. Stop the drill, check the camera
+                    permission, and arm again.
+                  </p>
+                </div>
+              </section>
+            ) : null}
 
             <div>
               <div className="mb-1 flex justify-between font-mono text-micro tracking-[0.15em] text-dim">

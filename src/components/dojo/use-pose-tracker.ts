@@ -73,6 +73,14 @@ export function usePoseTracker(
   const [state, setState] = useState<TrackerState>('idle');
   const [error, setError] = useState('');
   const [fps, setFps] = useState(0);
+  const [backend, setBackend] = useState<'GPU' | 'CPU' | null>(null);
+  /** True when the loop is running but no frame has landed for a while. */
+  const [stalled, setStalled] = useState(false);
+  const stalledRef = useRef(false);
+  const processedRef = useRef(0);
+  const lastThrowRef = useRef('');
+  const watchdogRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  stalledRef.current = stalled;
 
   // MediaPipe's PoseLandmarker type is only available after the dynamic import,
   // so the ref is intentionally untyped here.
@@ -90,17 +98,33 @@ export function usePoseTracker(
     }
     setState('loading');
     setError('');
-    try {
+
+    const build = async (delegate: 'GPU' | 'CPU') => {
       const vision = await import('@mediapipe/tasks-vision');
       const fileset = await vision.FilesetResolver.forVisionTasks(WASM_URL);
-      landmarkerRef.current = (await vision.PoseLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+      return (await vision.PoseLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: MODEL_URL, delegate },
         runningMode: 'VIDEO',
         numPoses: 1,
         minPoseDetectionConfidence: 0.5,
         minPosePresenceConfidence: 0.5,
         minTrackingConfidence: 0.5,
       })) as unknown as PoseLandmarkerLike;
+    };
+
+    try {
+      // GPU first, but never only GPU. WebGL is unavailable or blocked on more
+      // devices than you would expect — older Androids, hardware acceleration
+      // switched off in desktop Chrome, some in-app browsers — and the failure
+      // shows up as a landmarker that builds and then never emits a frame.
+      // CPU is slower and completely usable for these drills.
+      try {
+        landmarkerRef.current = await build('GPU');
+        setBackend('GPU');
+      } catch {
+        landmarkerRef.current = await build('CPU');
+        setBackend('CPU');
+      }
       setState('ready');
     } catch (err) {
       setState('error');
@@ -115,13 +139,28 @@ export function usePoseTracker(
   const stop = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+    if (watchdogRef.current) clearInterval(watchdogRef.current);
+    watchdogRef.current = null;
+    setStalled(false);
     lastVideoTime.current = -1;
     setState((s) => (s === 'running' ? 'ready' : s));
   }, []);
 
   const start = useCallback(() => {
-    if (!landmarkerRef.current) return;
+    // Previously a bare early return: if the model never built, arming the
+    // drill did nothing at all and the member watched a black frame with 0 FPS
+    // and no explanation.
+    if (!landmarkerRef.current) {
+      setState('error');
+      setError('Pose engine is not loaded. Reload the page and arm again.');
+      return;
+    }
+    setStalled(false);
     setState('running');
+
+    const armedAt = performance.now();
+    processedRef.current = 0;
+    lastThrowRef.current = '';
 
     const tick = () => {
       const video = videoRef.current;
@@ -134,8 +173,12 @@ export function usePoseTracker(
             const result = landmarker.detectForVideo(video, performance.now());
             const pose = result?.landmarks?.[0] as Landmark[] | undefined;
             callbackRef.current(pose ?? null);
-          } catch {
+            processedRef.current++;
+          } catch (err) {
+            // Swallowing this used to make a permanently broken engine look
+            // exactly like an empty room: no landmarks, no error, no clue.
             callbackRef.current(null);
+            lastThrowRef.current = err instanceof Error ? err.message : 'detection failed';
           }
 
           const now = performance.now();
@@ -150,15 +193,41 @@ export function usePoseTracker(
     };
 
     rafRef.current = requestAnimationFrame(tick);
+
+    // ── watchdog ────────────────────────────────────────────────────────
+    // On a TIMER, deliberately, not inside the rAF loop.
+    //
+    // The first version checked for a stall from within tick(), which shares
+    // the failure it is supposed to catch: if requestAnimationFrame never
+    // runs — background tab, throttled webview, compositor asleep — then the
+    // loop is dead AND so is the check, and the member watches a black frame
+    // with 0 FPS and no warning. A watchdog cannot depend on the thing it
+    // watches.
+    if (watchdogRef.current) clearInterval(watchdogRef.current);
+    watchdogRef.current = setInterval(() => {
+      const processed = processedRef.current;
+      if (!processed && performance.now() - armedAt > 4000) {
+        setStalled(true);
+        setError(
+          lastThrowRef.current
+            ? `Pose engine is erroring on every frame: ${lastThrowRef.current}`
+            : 'No camera frames are reaching the pose engine. Check the camera permission, and that nothing else is using the camera.',
+        );
+      } else if (processed && stalledRef.current) {
+        setStalled(false);
+        setError('');
+      }
+    }, 1000);
   }, [videoRef]);
 
   useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (watchdogRef.current) clearInterval(watchdogRef.current);
       landmarkerRef.current?.close?.();
       landmarkerRef.current = null;
     };
   }, []);
 
-  return { state, error, fps, load, start, stop };
+  return { state, error, fps, backend, stalled, load, start, stop };
 }
