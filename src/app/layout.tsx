@@ -50,10 +50,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${display.variable} ${mono.variable}`}>
       <body className="min-h-[100dvh] bg-canvas text-phosphor antialiased">
         <div className="min-h-[100dvh]">{children}</div>
-        {/* Simulated hardware limits — see globals.css. Both are removed under
-            prefers-reduced-motion. */}
-        <div className="grain-overlay" aria-hidden />
-        <div className="crt-overlay" aria-hidden />
+        {/* The CRT scanline and grain overlays used to live here, fixed over the
+            whole document at z-index 9999. They read as a texture on a desktop
+            monitor and as damage on a phone: 1px stripes on a 3px period beat
+            against glyph stems at ~3x pixel density, so headline numerals and
+            class names came out visibly shredded.
+
+            The industrial feel comes from the grid rules, hazard stripes,
+            registration marks and type — devices that sit BESIDE content rather
+            than on top of it. Nothing is allowed to overlay text again. */}
         <RegisterSW />
       </body>
     </html>
