@@ -201,6 +201,13 @@ saying out loud to members, because it is not discoverable.
 
 ## 5. Known limitations at launch
 
+- **ROTATE THE `service_role` KEY BEFORE REAL MEMBERS USE THIS.** The key used
+  during the trial build was exposed in a screenshot. Harmless for a demo
+  database with no member data; unacceptable once real people have accounts.
+  Rotate at Settings -> API Keys -> JWT Keys, then update
+  `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Netlify (same JWT secret signs both) and
+  re-store the new service key in Vault.
+
 - **The interaction table is not clinically reviewed.** Every row is
   `reviewed: false`. It is a prompt to ask a professional, not advice. See the
   README section before putting it in front of members.
