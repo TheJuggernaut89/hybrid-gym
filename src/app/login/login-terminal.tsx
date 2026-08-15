@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { createClient } from '@/lib/supabase/client';
-import { SITE_URL } from '@/lib/supabase/config';
+import { siteUrl } from '@/lib/supabase/config';
 import { Button } from '@/components/ui/button';
 
 type Phase = 'idle' | 'sending' | 'sent' | 'error';
@@ -32,7 +32,7 @@ export function LoginTerminal({
 
     try {
       const supabase = createClient();
-      const redirectTo = `${SITE_URL}/auth/callback${
+      const redirectTo = `${siteUrl()}/auth/callback${
         next ? `?next=${encodeURIComponent(next)}` : ''
       }`;
       const { error } = await supabase.auth.signInWithOtp({
