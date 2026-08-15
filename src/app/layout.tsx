@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Archivo_Black, JetBrains_Mono } from 'next/font/google';
+import { Archivo_Black, Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { RegisterSW } from '@/components/pwa/register-sw';
 
@@ -10,6 +10,15 @@ const display = Archivo_Black({
   subsets: ['latin'],
   weight: '400',
   variable: '--font-display',
+  display: 'swap',
+});
+
+// Body face. Monospace was carrying every sentence in the app, and a uniform
+// advance is exactly wrong for reading — the eye uses varying letter widths to
+// find word shapes. Mono stays for data, labels and anything tabular.
+const body = Inter({
+  subsets: ['latin'],
+  variable: '--font-body',
   display: 'swap',
 });
 
@@ -46,7 +55,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="min-h-[100dvh] bg-canvas text-phosphor">
         <div className="min-h-[100dvh]">{children}</div>
         {/* The CRT scanline and grain overlays used to live here, fixed over the

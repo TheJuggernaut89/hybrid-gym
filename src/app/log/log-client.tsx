@@ -71,7 +71,7 @@ export function LogClient() {
               Logged
             </span>
           </div>
-          <p className="px-3 py-2.5 font-mono text-read text-phosphor">{note}</p>
+          <p className="px-3 py-2.5 font-sans text-read text-phosphor">{note}</p>
         </section>
         <button
           type="button"
@@ -181,7 +181,7 @@ export function LogClient() {
             ) : null}
 
             {scanNote ? (
-              <p className="border-b border-edge px-3 py-2 font-mono text-read text-engage">
+              <p className="border-b border-edge px-3 py-2 font-sans text-read text-engage">
                 {scanNote}
               </p>
             ) : null}
@@ -227,7 +227,7 @@ export function LogClient() {
                 aria-label={`Effort, 1 to 10. Currently ${rpe}, ${anchor.word}`}
                 className="h-11 w-full accent-gold [touch-action:manipulation]"
               />
-              <p className="font-mono text-read text-dim">{anchor.feel}</p>
+              <p className="font-sans text-read text-dim">{anchor.feel}</p>
               <dl className="mt-2 grid grid-cols-5 gap-px bg-edge">
                 {RPE_ANCHORS.map((a) => (
                   <div key={a.rpe} className="bg-canvas px-1 py-1 text-center">
@@ -250,7 +250,7 @@ export function LogClient() {
             {note && !done ? (
               <>
                 <HazardBar />
-                <p className="px-3 py-2 font-mono text-read text-phosphor">
+                <p className="px-3 py-2 font-sans text-read text-phosphor">
                   {note}
                 </p>
               </>

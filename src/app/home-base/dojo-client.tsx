@@ -288,7 +288,7 @@ export function DojoClient({
                       <div className="mt-1.5">
                         <StageBadge stage={progress[d.id]?.stage ?? 'ACQUIRE'} />
                       </div>
-                      <p className="mt-1.5 font-mono text-read text-dim">
+                      <p className="mt-1.5 font-sans text-read text-dim">
                         {d.brief}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
@@ -319,7 +319,7 @@ export function DojoClient({
               </ul>
             </Panel>
 
-            <p className="font-mono text-read text-dim">
+            <p className="font-sans text-read text-dim">
               Pose tracking runs entirely in your browser. No video leaves this device and
               nothing is uploaded — only the rep count and form score are saved.
             </p>
@@ -332,7 +332,7 @@ export function DojoClient({
             <Panel brackets>
               <PanelHeader label={drill.name} right={formatDuration(drill.durationSec)} />
               <div className="space-y-3 p-3">
-                <p className="font-mono text-read text-phosphor">
+                <p className="font-sans text-read text-phosphor">
                   {drill.brief}
                 </p>
 
@@ -349,10 +349,10 @@ export function DojoClient({
                       Coaching ladder
                     </span>
                   </div>
-                  <p className="mt-1.5 font-mono text-read text-phosphor">
+                  <p className="mt-1.5 font-sans text-read text-phosphor">
                     {STAGE_META[stage].cuePolicy}
                   </p>
-                  <p className="mt-1 font-mono text-read text-dim">
+                  <p className="mt-1 font-sans text-read text-dim">
                     {STAGE_META[stage].blurb}
                   </p>
                 </div>
@@ -360,7 +360,7 @@ export function DojoClient({
                   <div className="font-mono text-micro tracking-[0.2em] text-gold">
                     CAMERA SETUP
                   </div>
-                  <p className="mt-1 font-mono text-read text-dim">
+                  <p className="mt-1 font-sans text-read text-dim">
                     {drill.cameraNote}
                   </p>
                 </div>
@@ -405,7 +405,7 @@ export function DojoClient({
                 />
                 {camState !== 'live' ? (
                   <div className="absolute inset-0 grid place-items-center px-6 text-center">
-                    <p className="font-mono text-read text-dim">
+                    <p className="font-sans text-read text-dim">
                       {camState === 'starting'
                         ? 'OPENING CAMERA…'
                         : camError || 'Camera off. Arm the dojo to check your framing.'}
@@ -416,7 +416,7 @@ export function DojoClient({
             </div>
 
             {tracker.state === 'error' ? (
-              <p className="border-l-2 border-fight pl-2 font-mono text-read text-fight">
+              <p className="border-l-2 border-fight pl-2 font-sans text-read text-fight">
                 {tracker.error}
               </p>
             ) : null}
@@ -512,7 +512,7 @@ export function DojoClient({
                 <div className="col-span-2 bg-canvas px-3 py-2.5">
                   <div className="font-mono text-micro uppercase text-fight">Silent probe</div>
                   <div className="display mt-1.5 text-h3 text-phosphor">NO SCORE</div>
-                  <p className="mt-1 font-mono text-read text-dim">
+                  <p className="mt-1 font-sans text-read text-dim">
                     Scoring is running. You just don&rsquo;t get to see it.
                   </p>
                 </div>
@@ -536,10 +536,10 @@ export function DojoClient({
                   <div className="font-mono text-micro uppercase tracking-[0.18em] text-fight">
                     {'>>'} Tracking is not running
                   </div>
-                  <p className="mt-1.5 font-mono text-read text-phosphor">
+                  <p className="mt-1.5 font-sans text-read text-phosphor">
                     {tracker.error || 'The pose engine stopped returning frames.'}
                   </p>
-                  <p className="mt-1.5 font-mono text-read text-dim">
+                  <p className="mt-1.5 font-sans text-read text-dim">
                     Your reps are not being counted. Stop the drill, check the camera
                     permission, and arm again.
                   </p>
@@ -583,7 +583,7 @@ export function DojoClient({
             <Panel brackets>
               <PanelHeader label="FATIGUE vs FAILURE" accent="fight" />
               <div className="space-y-3 p-3">
-                <p className="font-mono text-read text-phosphor">
+                <p className="font-sans text-read text-phosphor">
                   Tap wherever you feel it right now. Burn in the muscle the drill was built
                   for is fatigue. Anything else — especially a joint — is failure, and we fix
                   it before you go again.
@@ -603,7 +603,7 @@ export function DojoClient({
                       <Activity size={12} />
                       ENGINE FLAGGED DURING THE SET
                     </div>
-                    <p className="mt-1 font-mono text-read text-phosphor">
+                    <p className="mt-1 font-sans text-read text-phosphor">
                       {flaggedStrain.map((r) => REGION_LABEL[r]).join(', ')} — the form engine
                       saw this break down while you were working, not just afterwards.
                     </p>
@@ -625,7 +625,7 @@ export function DojoClient({
                       accent={verdict === 'fatigue' ? 'engage' : 'fight'}
                     />
                     <div className="space-y-3 p-3">
-                      <p className="font-mono text-read text-phosphor">
+                      <p className="font-sans text-read text-phosphor">
                         {verdictCopy(verdict, verdictRegion, drill)}
                       </p>
                       {verdict === 'failure' ? (
@@ -679,7 +679,7 @@ export function DojoClient({
                     </li>
                   ))}
                 </ol>
-                <p className="font-mono text-read text-dim">
+                <p className="font-sans text-read text-dim">
                   This is mobility, not punishment. If the {REGION_LABEL[verdictRegion].toLowerCase()}{' '}
                   still complains after this, stop training it and see a physio — an app cannot
                   diagnose you.
@@ -715,7 +715,7 @@ export function DojoClient({
             <div className="border border-engage bg-surface p-6 text-center">
               <div className="text-h1 text-engage">+{xpPreview} XP</div>
               <p className="mt-1 text-h3 text-phosphor">{drill.name}</p>
-              <p className="mt-2 font-mono text-read text-dim">
+              <p className="mt-2 font-sans text-read text-dim">
                 {saveNote}
               </p>
             </div>
@@ -757,10 +757,10 @@ export function DojoClient({
                       },
                     )}
                   </div>
-                  <p className="mt-3 font-mono text-read text-phosphor">
+                  <p className="mt-3 font-sans text-read text-phosphor">
                     {ladder.message}
                   </p>
-                  <p className="mt-2 font-mono text-read text-dim">
+                  <p className="mt-2 font-sans text-read text-dim">
                     Next session: {STAGE_META[ladder.to].cuePolicy}
                   </p>
                 </div>

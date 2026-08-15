@@ -230,7 +230,7 @@ export function ScannerClient({
       {!online ? (
         <div className="flex items-start gap-2 border border-fight bg-fight/10 p-3">
           <WifiOff size={15} className="mt-0.5 shrink-0 text-fight" />
-          <p className="font-mono text-read text-fight">
+          <p className="font-sans text-read text-fight">
             OFFLINE. Gym Mode runs server-side vision and needs a connection. The Shadow
             Dojo still works on-device.
           </p>
@@ -350,7 +350,7 @@ export function ScannerClient({
             </Panel>
 
             {error ? (
-              <p className="border-l-2 border-fight pl-2 font-mono text-read text-fight">
+              <p className="border-l-2 border-fight pl-2 font-sans text-read text-fight">
                 {error}
               </p>
             ) : null}
@@ -414,7 +414,7 @@ export function ScannerClient({
             >
               PARSING…
             </motion.div>
-            <p className="mt-1 font-mono text-read tracking-[0.2em] text-dim">
+            <p className="mt-1 font-sans text-read tracking-[0.2em] text-dim">
               READING TELEMETRY
             </p>
           </motion.div>
@@ -455,7 +455,7 @@ export function ScannerClient({
             {coachLine ? (
               <Panel>
                 <PanelHeader label="COACH" accent="fight" />
-                <p className="p-3 font-mono text-read italic text-phosphor">
+                <p className="p-3 font-sans text-read italic text-phosphor">
                   &ldquo;{coachLine}&rdquo;
                 </p>
               </Panel>
@@ -467,7 +467,7 @@ export function ScannerClient({
             </div>
 
             {error ? (
-              <p className="border-l-2 border-fight pl-2 font-mono text-read text-fight">{error}</p>
+              <p className="border-l-2 border-fight pl-2 font-sans text-read text-fight">{error}</p>
             ) : null}
 
             <div className="grid grid-cols-3 gap-2">
@@ -492,7 +492,7 @@ export function ScannerClient({
             className="border border-engage bg-surface p-6 text-center"
           >
             <div className="text-h1 text-engage">+{xpPreview} XP</div>
-            <p className="mt-2 font-mono text-read text-dim">{saveNote}</p>
+            <p className="mt-2 font-sans text-read text-dim">{saveNote}</p>
             <div className="mt-5 grid grid-cols-2 gap-2">
               <Button variant="ghost" onClick={reset}>
                 {isNutrition ? 'LOG ANOTHER' : 'SCAN AGAIN'}
@@ -609,7 +609,7 @@ function EquipmentReview({
         <Stat label="Console Time" value={data.time_display ?? '—'} accent="neutral" />
       </div>
       <div className="border-t border-edge px-3 py-2">
-        <p className="font-mono text-read text-dim">
+        <p className="font-sans text-read text-dim">
           CONFIDENCE <span className="text-phosphor">{data.confidence.toUpperCase()}</span>
           {data.unreadable_fields.length > 0 ? (
             <>
@@ -666,23 +666,23 @@ function NutritionReview({
         />
       </div>
       <div className="border-t border-edge px-3 py-2">
-        <p className="font-mono text-read text-dim">
+        <p className="font-sans text-read text-dim">
           {data.portion_note}
         </p>
         {data.items.length > 0 ? (
-          <p className="mt-1.5 font-mono text-read text-dim">
+          <p className="mt-1.5 font-sans text-read text-dim">
             ON THE PLATE: {data.items.join(' · ')}
           </p>
         ) : null}
         {/* Where the portion number came from is the single most useful thing
             to disclose here — it is the weakest part of any photo estimate. */}
         {data.portion_basis ? (
-          <p className="mt-1.5 font-mono text-read text-dim">
+          <p className="mt-1.5 font-sans text-read text-dim">
             <span className="text-gold">PORTION BASIS</span> {data.portion_basis}
             {data.stated_confidence === 'unsure' ? ' · they said they were unsure' : ''}
           </p>
         ) : null}
-        <p className="mt-1.5 font-mono text-read text-dim">
+        <p className="mt-1.5 font-sans text-read text-dim">
           CONFIDENCE <span className="text-dim">{data.confidence.toUpperCase()}</span> ·
           Estimates for training feedback, not clinical advice.
         </p>

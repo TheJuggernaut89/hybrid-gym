@@ -22,7 +22,7 @@ export default function LoginPage({
             </svg>
           </div>
           <h1 className="mt-4 text-h1 text-phosphor">HYBRID COMBATIVE</h1>
-          <p className="font-mono text-read tracking-[0.3em] text-gold">PLAYER HUD // DAMANSARA</p>
+          <p className="font-sans text-read tracking-[0.3em] text-gold">PLAYER HUD // DAMANSARA</p>
         </div>
 
         {isSupabaseConfigured ? (
@@ -30,7 +30,7 @@ export default function LoginPage({
         ) : (
           <div className="border border-edge bg-surface p-5">
             <h2 className="text-h2 text-fight">DEMO MODE ACTIVE</h2>
-            <p className="mt-2 font-mono text-read text-dim">
+            <p className="mt-2 font-sans text-read text-dim">
               No Supabase credentials found. Auth is bypassed and a mock fighter is served.
               Set <span className="text-gold">NEXT_PUBLIC_SUPABASE_URL</span> and{' '}
               <span className="text-gold">NEXT_PUBLIC_SUPABASE_ANON_KEY</span> in{' '}
@@ -45,7 +45,7 @@ export default function LoginPage({
           </div>
         )}
 
-        <p className="mt-6 text-center font-mono text-read tracking-[0.2em] text-dim">
+        <p className="mt-6 text-center font-sans text-read tracking-[0.2em] text-dim">
           NO ADS. NO FLUFF. JUST WORK.
         </p>
       </div>

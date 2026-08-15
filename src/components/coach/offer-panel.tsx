@@ -34,8 +34,8 @@ export function OfferPanel({
           <div className="font-mono text-micro uppercase tracking-[0.18em] text-gold">
             {'>>'} Hold here
           </div>
-          <p className="mt-1.5 font-mono text-read text-phosphor">{veto}</p>
-          <p className="mt-1.5 font-mono text-read text-dim">
+          <p className="mt-1.5 font-sans text-read text-phosphor">{veto}</p>
+          <p className="mt-1.5 font-sans text-read text-dim">
             {load.acute} AU this week against a {load.chronic} AU baseline
             {load.monotony !== null ? ` · monotony ${load.monotony.toFixed(1)}` : ''}
           </p>
@@ -77,7 +77,7 @@ export function OfferPanel({
 
             {/* The evidence, always. Never "you should" — the member can check
                 this against their own memory of the last month. */}
-            <p className="mt-1 font-mono text-read text-dim">{o.because}</p>
+            <p className="mt-1 font-sans text-read text-dim">{o.because}</p>
 
             <Link
               href="/now#declare"

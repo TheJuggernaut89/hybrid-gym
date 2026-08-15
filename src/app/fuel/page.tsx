@@ -124,7 +124,7 @@ export default async function FuelPage() {
               right={`${String(today.length).padStart(2, '0')} logged`}
             />
             {today.length === 0 ? (
-              <p className="p-3 font-mono text-read text-dim">
+              <p className="p-3 font-sans text-read text-dim">
                 Nothing logged today. Point the camera at your plate.
               </p>
             ) : (
@@ -150,7 +150,7 @@ export default async function FuelPage() {
                       {Math.round(Number(meal.fats_g) || 0)}g
                     </p>
                     {meal.coach_comment ? (
-                      <p className="mt-1.5 border-l-2 border-edgeBright pl-2 font-mono text-read text-dim">
+                      <p className="mt-1.5 border-l-2 border-edgeBright pl-2 font-sans text-read text-dim">
                         {meal.coach_comment}
                       </p>
                     ) : null}
@@ -191,7 +191,7 @@ export default async function FuelPage() {
             {target.estimated ? (
               <>
                 <HazardBar tone="gold" />
-                <p className="px-3 py-2.5 font-mono text-read text-gold">
+                <p className="px-3 py-2.5 font-sans text-read text-gold">
                   Biometrics incomplete — defaults substituted. Finish your dossier for a
                   real number.
                 </p>
@@ -205,7 +205,7 @@ export default async function FuelPage() {
                   <div className="font-mono text-micro uppercase text-fight">
                     Medical flag on file
                   </div>
-                  <p className="mt-1 font-mono text-read text-phosphor">
+                  <p className="mt-1 font-sans text-read text-phosphor">
                     You&rsquo;ve declared a condition that diet directly affects. These are
                     generic training estimates, not a plan for you — get the numbers signed
                     off by a doctor or dietitian before cutting.
@@ -213,7 +213,7 @@ export default async function FuelPage() {
                 </div>
               </>
             ) : (
-              <p className="border-t border-edge px-3 py-2.5 font-mono text-read text-dim">
+              <p className="border-t border-edge px-3 py-2.5 font-sans text-read text-dim">
                 Estimates for training feedback, not clinical nutrition advice.
               </p>
             )}

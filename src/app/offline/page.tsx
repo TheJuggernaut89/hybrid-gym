@@ -5,7 +5,7 @@ export default function OfflinePage() {
     <main className="grid min-h-[100dvh] place-items-center px-6 text-center">
       <div className="max-w-sm border border-edge bg-surface p-6">
         <h1 className="text-h1 text-fight">SIGNAL LOST</h1>
-        <p className="mt-3 font-mono text-read text-dim">
+        <p className="mt-3 font-sans text-read text-dim">
           Gym Mode needs a connection — OCR and nutrition vision run server-side.
           <br />
           <br />

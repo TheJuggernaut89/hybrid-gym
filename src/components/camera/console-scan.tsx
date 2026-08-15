@@ -168,7 +168,7 @@ export function ConsoleScan({
       {note || error ? (
         <>
           <HazardBar tone="gold" />
-          <p className="px-3 py-2 font-mono text-read text-dim">
+          <p className="px-3 py-2 font-sans text-read text-dim">
             {note || error}
           </p>
         </>

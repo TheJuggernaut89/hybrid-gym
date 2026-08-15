@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Crosshair, Flame, PlusSquare, Swords, Target } from 'lucide-react';
+import { CalendarCheck, Crosshair, Flame, PlusSquare, Swords, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Five top-level places.
@@ -18,10 +18,11 @@ import { cn } from '@/lib/utils';
 // duplicates to members. STATS is a weekly ritual, so it sits last.
 const LINKS = [
   { href: '/now', label: 'NOW', index: '01', Icon: Target },
-  { href: '/log', label: 'LOG', index: '02', Icon: PlusSquare },
-  { href: '/fuel', label: 'FUEL', index: '03', Icon: Flame },
-  { href: '/home-base', label: 'FORM', index: '04', Icon: Swords },
-  { href: '/hud', label: 'STATS', index: '05', Icon: Crosshair },
+  { href: '/plan', label: 'PLAN', index: '02', Icon: CalendarCheck },
+  { href: '/log', label: 'LOG', index: '03', Icon: PlusSquare },
+  { href: '/fuel', label: 'FUEL', index: '04', Icon: Flame },
+  { href: '/home-base', label: 'FORM', index: '05', Icon: Swords },
+  { href: '/hud', label: 'STATS', index: '06', Icon: Crosshair },
 ];
 
 export function BottomNav() {
@@ -29,7 +30,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-edge bg-canvas/97 backdrop-blur">
-      <ul className="rule-grid mx-auto max-w-md grid-cols-5">
+      <ul className="rule-grid mx-auto max-w-md grid-cols-6">
         {LINKS.map(({ href, label, index, Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
