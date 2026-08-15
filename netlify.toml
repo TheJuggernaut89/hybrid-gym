@@ -1,0 +1,32 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next 14 App Router + server actions need a modern runtime on Netlify.
+  NODE_VERSION = "20"
+
+# Runs the App Router (server components, server actions, route handlers) on
+# Netlify Functions. Every route in this app is `force-dynamic` — it reads
+# per-member data — so none of it can be statically exported.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# The service worker must never be served from cache, or a member can be stuck
+# on a build with no push handler and no way to receive a reminder.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.webmanifest"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Build output is content-hashed, so it is safe to cache hard.
+[[headers]]
+  for = "/_next/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

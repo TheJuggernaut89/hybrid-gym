@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" fill="#0B0B0B"/>
+  <!-- Content kept inside the 80% safe zone for maskable cropping. -->
+  <g transform="translate(256 256) scale(0.66) translate(-256 -256)">
+    <g fill="none" stroke="#FFC107" stroke-width="26" stroke-linecap="square" stroke-linejoin="miter">
+      <path d="M104 168 C104 118, 148 100, 186 118"/>
+      <path d="M408 168 C408 118, 364 100, 326 118"/>
+      <path d="M186 118 L186 214 C186 292, 220 348, 256 388 C292 348, 326 292, 326 214 L326 118 Z"/>
+    </g>
+    <g fill="#EF4444">
+      <rect x="206" y="196" width="40" height="26"/>
+      <rect x="266" y="196" width="40" height="26"/>
+    </g>
+    <rect x="232" y="268" width="48" height="16" fill="#FFC107"/>
+  </g>
+</svg>

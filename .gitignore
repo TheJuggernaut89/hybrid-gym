@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+build
+.env
+.env.local
+.env*.local
+.vercel
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+refs/
+
+# Vendored third-party skill content (re-installable — see README > Tooling).
+# .claude/skills/* are symlinks into here, so they go too.
+.agents/
+.claude/skills/

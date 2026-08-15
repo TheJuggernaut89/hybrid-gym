@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "//exclude": "src/lib/__tests__ holds assertion harnesses ported from plain JS. They are run by Vitest (esbuild strips types) and DO fail the build on a bad assertion — see `npm test` — but they are not written to strict TS and are not part of the shipped bundle, so they are kept out of `npm run typecheck`, which exists to gate app code.",
+  "//exclude2": "supabase/functions runs on Deno with jsr:/npm: specifiers, not on Next's Node/bundler resolution. Typechecking it here would fail on `Deno` and every remote import; it is deployed and checked by the Supabase CLI instead.",
+  "exclude": ["node_modules", "src/lib/__tests__", "supabase/functions"]
+}

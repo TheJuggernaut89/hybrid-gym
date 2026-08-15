@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "image-enhancer": {
+      "source": "ComposioHQ/awesome-claude-skills",
+      "sourceType": "github",
+      "skillPath": "image-enhancer/SKILL.md",
+      "computedHash": "e673c02c3e970b3ea0bd4ca449ae12f955d8476bb4196842d1b1489cca6be219"
+    },
+    "webapp-testing": {
+      "source": "ComposioHQ/awesome-claude-skills",
+      "sourceType": "github",
+      "skillPath": "webapp-testing/SKILL.md",
+      "computedHash": "5a6a18c0137cfbabec058e86fc1c8f6919d846a7b2a34ee978cc8ced866ee2e5"
+    }
+  }
+}

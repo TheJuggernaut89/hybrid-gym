@@ -1,0 +1,26 @@
+{
+  "name": "Hybrid Combative — Player HUD",
+  "short_name": "HYBRID HUD",
+  "description": "Gamified combat & recovery companion for Hybrid Combative Damansara.",
+  "start_url": "/hud",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B0B0B",
+  "theme_color": "#0B0B0B",
+  "categories": ["fitness", "health", "sports"],
+  "icons": [
+    {
+      "src": "/icons/bull.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/bull-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
