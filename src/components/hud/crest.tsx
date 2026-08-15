@@ -2,39 +2,53 @@ import { crestForLevel } from '@/lib/xp';
 import { cn } from '@/lib/utils';
 
 /**
- * Bull-skull crest. Drawn as a front-facing skull: a wide brow that tapers to a
- * muzzle, with horns sweeping OUT and UP from the temples. The previous version
- * curved the horns inward, which read as a horseshoe rather than a bull.
+ * The Hybrid Combative mark.
+ *
+ * Deliberately the SAME geometry as public/icons/bull.svg — crescent horns, an
+ * angular skull converging to a point, raked eyes. The nav previously carried a
+ * different, simpler bull than the app icon, so the mark a member saw on their
+ * home screen was not the mark they saw at the top of the app.
+ *
+ * `color` is driven by crest tier on /hud and defaults to the brand gold
+ * elsewhere, so the tier can recolour the whole mark without a second asset.
  */
 export function BullSkull({
   size = 40,
-  color = '#FFC107',
+  color = '#FFA51E',
+  /** Punched-through areas. Must match whatever sits behind the mark. */
+  substrate = '#0A0A0A',
   className,
 }: {
   size?: number;
   color?: string;
+  substrate?: string;
   className?: string;
 }) {
   return (
     <svg
-      viewBox="0 0 64 56"
+      viewBox="64 60 384 364"
       width={size}
-      height={(size * 56) / 64}
-      fill="none"
+      height={size}
       className={className}
       aria-hidden
       shapeRendering="geometricPrecision"
     >
-      {/* Geometric reduction rather than anatomy: two tapered horn wedges
-          sweeping up-and-out, and a trapezoid skull plate. Curves read as soft
-          at small sizes — hard angles survive the 17px nav mark. */}
-      <path d="M19 15 L1 6 L1 10.5 L18 23 Z" fill={color} />
-      <path d="M45 15 L63 6 L63 10.5 L46 23 Z" fill={color} />
-      <path d="M20 12 L44 12 L41 39 L32 52 L23 39 Z" fill={color} />
-      {/* sockets and muzzle punched back out to the substrate */}
-      <rect x="24.5" y="21" width="6" height="5" fill="#0A0A0A" />
-      <rect x="33.5" y="21" width="6" height="5" fill="#0A0A0A" />
-      <rect x="29.5" y="32" width="5" height="8" fill="#0A0A0A" />
+      <g fill={color}>
+        <path d="M182 188 C132 176 100 138 96 78 C74 140 82 200 132 238 Z" />
+        <path d="M330 188 C380 176 412 138 416 78 C438 140 430 200 380 238 Z" />
+      </g>
+      <path
+        d="M186 176 L326 176 L366 268 L256 410 L146 268 Z"
+        fill={substrate}
+        stroke={color}
+        strokeWidth={34}
+        strokeLinejoin="miter"
+      />
+      {/* The eyes stay red at every tier — the one fixed point in the mark. */}
+      <g fill="#E4340E">
+        <path d="M196 250 L244 272 L238 292 L192 268 Z" />
+        <path d="M316 250 L268 272 L274 292 L320 268 Z" />
+      </g>
     </svg>
   );
 }

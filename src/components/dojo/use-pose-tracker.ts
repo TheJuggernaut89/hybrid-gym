@@ -13,12 +13,40 @@ const MODEL_URL =
   process.env.NEXT_PUBLIC_POSE_MODEL ||
   'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
 
-/** Skeleton edges drawn on the overlay (subset of MediaPipe POSE_CONNECTIONS). */
+/**
+ * Skeleton edges drawn on the overlay.
+ *
+ * MediaPipe Pose returns 33 landmarks. Only the trunk and limbs were drawn
+ * before, which reads as a stick figure rather than as tracking — the hands
+ * and head are what make it obvious the camera is following YOU.
+ *
+ * Landmark map: 0 nose · 2/5 eyes · 7/8 ears · 9/10 mouth · 11/12 shoulders
+ * 13/14 elbows · 15/16 wrists · 17/18 pinky · 19/20 index · 21/22 thumb
+ * 23/24 hips · 25/26 knees · 27/28 ankles · 29/30 heels · 31/32 toes.
+ *
+ * Note this gives THREE points per hand, not the 21 of a full hand model — a
+ * fan, not fingers. Real finger tracking needs MediaPipe HandLandmarker
+ * running alongside, which costs frame rate that squats and hinges do not
+ * need. See the README.
+ */
 export const POSE_EDGES: Array<[number, number]> = [
+  // head — nose to eyes to ears, plus the mouth line
+  [0, 2], [0, 5], [2, 7], [5, 8], [9, 10],
+  // neck: nose down to the midpoint is implicit; tie head to both shoulders
+  [0, 11], [0, 12],
+  // trunk
   [11, 12], [11, 23], [12, 24], [23, 24],
+  // arms
   [11, 13], [13, 15], [12, 14], [14, 16],
+  // left hand fan
+  [15, 17], [15, 19], [15, 21], [17, 19],
+  // right hand fan
+  [16, 18], [16, 20], [16, 22], [18, 20],
+  // legs
   [23, 25], [25, 27], [24, 26], [26, 28],
-  [27, 31], [28, 32],
+  // feet, including the heel so the ankle does not float
+  [27, 29], [29, 31], [27, 31],
+  [28, 30], [30, 32], [28, 32],
 ];
 
 interface Options {

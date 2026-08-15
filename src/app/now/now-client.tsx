@@ -103,58 +103,6 @@ export function NowClient({
         </>
       ) : null}
 
-      {/* ── TEMPO: the number that replaces the streak ─────────────────── */}
-      <section className="border-b border-edge px-3 pb-3 pt-4">
-        <div className="flex items-baseline justify-between">
-          <div className="font-mono text-micro uppercase text-faint">Tempo — 28 day</div>
-          <div
-            className={cn(
-              'flex items-center gap-1 font-mono text-micro uppercase',
-              tempo.trend === 'climbing'
-                ? 'text-engage'
-                : tempo.trend === 'slipping'
-                  ? 'text-fight'
-                  : 'text-dim',
-            )}
-          >
-            <TrendIcon size={11} />
-            {tempo.delta > 0 ? '+' : ''}
-            {tempo.delta.toFixed(1)} vs prev
-          </div>
-        </div>
-
-        <div className="flex items-end gap-3">
-          <div className="display text-hero leading-[0.78] text-gold">
-            {tempo.current.toFixed(1)}
-          </div>
-          <div className="pb-4 font-mono text-micro uppercase text-faint">
-            sessions
-            <br />
-            per week
-          </div>
-        </div>
-
-        <div className="mt-1 flex items-baseline justify-between">
-          <span className="display text-h3 text-phosphor">{tempo.band}</span>
-          <span className="telemetry font-mono text-micro uppercase text-faint">
-            {tempo.sessions} in 28d
-            {tempo.daysSinceLast !== null ? ` · last ${tempo.daysSinceLast}d ago` : ''}
-          </span>
-        </div>
-
-        <SegmentMeter
-          pct={Math.min(100, (tempo.current / 5) * 100)}
-          segments={25}
-          tone={tempo.trend === 'slipping' ? 'fight' : 'gold'}
-          className="mt-2"
-        />
-
-        <p className="mt-2 font-mono text-read text-dim">
-          {tempo.toHold > 0
-            ? `${tempo.toHold} more session${tempo.toHold > 1 ? 's' : ''} to hold ${tempo.band}. This number moves slowly — one miss is not a reset.`
-            : `Holding ${tempo.band}. Floor is ${bandFloor(tempo.band).toFixed(2)}/wk.`}
-        </p>
-      </section>
 
       {/* ── unresolved: the decline-reason capture ──────────────────────── */}
       {toResolve ? (
@@ -340,19 +288,41 @@ export function NowClient({
         </section>
       ) : null}
 
-      {/* ── declare ─────────────────────────────────────────────────────── */}
+      {/* ── declare ─────────────────────────────────────────────────────────
+          The one causal control on this screen. When there is nothing booked
+          it is a filled primary button, not a chevron: a member with no slot
+          declared is exactly the member this screen exists for, and the action
+          should not need finding. Once something IS booked it steps back to a
+          quiet secondary row — the commitment above it is the point by then. */}
       <section className="border-b border-edge">
         <button
           type="button"
           onClick={() => setShowPicker((s) => !s)}
-          className="flex min-h-11 w-full items-center justify-between px-3 py-2.5 [touch-action:manipulation]"
+          aria-expanded={showPicker}
+          className={cn(
+            'flex w-full items-center justify-between [touch-action:manipulation]',
+            upcoming
+              ? 'min-h-11 px-3 py-2.5'
+              : 'min-h-[60px] bg-gold px-3 py-3',
+          )}
         >
-          <span className="font-mono text-micro uppercase text-gold">
-            {upcoming ? 'Declare another slot' : 'Declare your next slot'}
+          <span
+            className={cn(
+              'font-mono uppercase',
+              upcoming
+                ? 'text-micro text-gold'
+                : 'text-data font-bold tracking-[0.14em] text-canvas',
+            )}
+          >
+            {upcoming ? 'Declare another slot' : 'Book your next session'}
           </span>
           <ChevronDown
-            size={14}
-            className={cn('text-dim transition-transform', showPicker && 'rotate-180')}
+            size={upcoming ? 14 : 18}
+            className={cn(
+              'transition-transform',
+              upcoming ? 'text-dim' : 'text-canvas',
+              showPicker && 'rotate-180',
+            )}
           />
         </button>
 
@@ -396,6 +366,64 @@ export function NowClient({
             })}
           </ul>
         ) : null}
+      </section>
+
+      {/* ── TEMPO ───────────────────────────────────────────────────────
+          Demoted, deliberately. This screen exists to catch someone
+          before they decide not to come, and TEMPO is a description of
+          the past — nothing a member can act on. It used to be ~98px at
+          the top while the declare control hid behind a chevron below
+          the fold, which is the hierarchy exactly backwards. */}
+      <section className="border-b border-edge px-3 pb-3 pt-4">
+        <div className="flex items-baseline justify-between">
+          <div className="font-mono text-micro uppercase text-faint">Tempo — 28 day</div>
+          <div
+            className={cn(
+              'flex items-center gap-1 font-mono text-micro uppercase',
+              tempo.trend === 'climbing'
+                ? 'text-engage'
+                : tempo.trend === 'slipping'
+                  ? 'text-fight'
+                  : 'text-dim',
+            )}
+          >
+            <TrendIcon size={11} />
+            {tempo.delta > 0 ? '+' : ''}
+            {tempo.delta.toFixed(1)} vs prev
+          </div>
+        </div>
+
+        <div className="flex items-end gap-3">
+          <div className="display text-h2 leading-[0.85] text-gold">
+            {tempo.current.toFixed(1)}
+          </div>
+          <div className="pb-1 font-mono text-micro uppercase text-dim">
+            sessions
+            <br />
+            per week
+          </div>
+        </div>
+
+        <div className="mt-1 flex items-baseline justify-between">
+          <span className="display text-h3 text-phosphor">{tempo.band}</span>
+          <span className="telemetry font-mono text-micro uppercase text-faint">
+            {tempo.sessions} in 28d
+            {tempo.daysSinceLast !== null ? ` · last ${tempo.daysSinceLast}d ago` : ''}
+          </span>
+        </div>
+
+        <SegmentMeter
+          pct={Math.min(100, (tempo.current / 5) * 100)}
+          segments={25}
+          tone={tempo.trend === 'slipping' ? 'fight' : 'gold'}
+          className="mt-2"
+        />
+
+        <p className="mt-2 font-mono text-read text-dim">
+          {tempo.toHold > 0
+            ? `${tempo.toHold} more session${tempo.toHold > 1 ? 's' : ''} to hold ${tempo.band}. This number moves slowly — one miss is not a reset.`
+            : `Holding ${tempo.band}. Floor is ${bandFloor(tempo.band).toFixed(2)}/wk.`}
+        </p>
       </section>
 
       {/* ── shield bank ─────────────────────────────────────────────────── */}

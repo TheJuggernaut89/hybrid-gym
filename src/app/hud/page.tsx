@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { Flame, ScanLine, Share2 } from 'lucide-react';
+import { Flame, PlusSquare, Share2 } from 'lucide-react';
 import { getHudSnapshot } from '@/lib/data';
 import { isSupabaseConfigured } from '@/lib/supabase/config';
 import { computeBountyProgress } from '@/lib/bounties';
@@ -106,11 +106,11 @@ export default async function HudPage() {
         {/* ── primary actions ───────────────────────────────────────────── */}
         <div className="rule-grid grid-cols-2 border-b border-edge">
           <Link
-            href="/scanner"
+            href="/log"
             className="flex min-h-[60px] items-center justify-center gap-2 bg-gold px-3 font-mono text-data font-bold uppercase tracking-[0.14em] text-canvas [touch-action:manipulation]"
           >
-            <ScanLine size={16} />
-            Gym Mode
+            <PlusSquare size={16} />
+            Log a session
           </Link>
           <Link
             href="/fuel"
