@@ -9,6 +9,7 @@ import { formatDuration } from '@/lib/utils';
 import { TopBar } from '@/components/nav/top-bar';
 import { BottomNav } from '@/components/nav/bottom-nav';
 import { Panel, PanelHeader } from '@/components/ui/panel';
+import { Disclosure } from '@/components/ui/disclosure';
 import { Stat } from '@/components/ui/stat';
 import { SegmentMeter, UnitTag, HazardBar } from '@/components/ui/industrial';
 import { RadarChart } from '@/components/hud/radar-chart';
@@ -136,8 +137,7 @@ export default async function HudPage() {
           <BountyList bounties={bountyProgress} />
 
           {/* ── dossier ─────────────────────────────────────────────────── */}
-          <Panel>
-            <PanelHeader label="Fighter dossier" accent="neutral" />
+          <Disclosure label="Fighter dossier" count="Biometrics">
             <div className="rule-grid grid-cols-4">
               <Stat label="Age" value={fighter.biological_data.age ?? '—'} />
               <Stat label="Weight" value={fighter.biological_data.weight_kg ?? '—'} unit="KG" />
@@ -165,14 +165,13 @@ export default async function HudPage() {
                 </p>
               </div>
             ) : null}
-          </Panel>
+          </Disclosure>
 
           {/* ── combat log ──────────────────────────────────────────────── */}
-          <Panel>
-            <PanelHeader
-              label="Combat log"
-              right={`${String(feed.length).padStart(2, '0')} entries`}
-            />
+          <Disclosure
+            label="Combat log"
+            count={`${String(feed.length).padStart(2, '0')} entries`}
+          >
             {feed.length === 0 ? (
               <p className="p-3 font-mono text-read text-dim">
                 Nothing logged yet. Go scan a machine.
@@ -210,7 +209,7 @@ export default async function HudPage() {
                 ))}
               </ul>
             )}
-          </Panel>
+          </Disclosure>
         </div>
       </main>
 
