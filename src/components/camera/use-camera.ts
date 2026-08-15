@@ -28,10 +28,48 @@ export function useCamera({
 }: UseCameraOptions = {}) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  /**
+   * Bumped whenever the <video> node mounts or the stream changes, so the
+   * binding effect below re-runs. See `attachVideo`.
+   */
+  const [bindTick, setBindTick] = useState(0);
   const analysisCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [state, setState] = useState<CameraState>('idle');
   const [error, setError] = useState('');
   const [quality, setQuality] = useState<FrameQuality>(EMPTY_QUALITY);
+
+  /**
+   * Callback ref for the <video> element.
+   *
+   * A plain ref object cannot tell us WHEN the node arrives, which is the whole
+   * problem: the camera may be granted before the element exists, or the
+   * element may remount underneath a live stream. This fires on both, and the
+   * effect re-binds.
+   */
+  const attachVideo = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    setBindTick((n) => n + 1);
+  }, []);
+
+  // Bind stream -> element whenever either side changes.
+  useEffect(() => {
+    const el = videoRef.current;
+    const stream = streamRef.current;
+    if (!el || !stream) return;
+    if (el.srcObject === stream) return;
+
+    el.srcObject = stream;
+    // Autoplay needs muted + playsInline on iOS; both are set on the elements.
+    // play() can still reject if the gesture is stale — retry once on the
+    // metadata event rather than leaving a frozen first frame.
+    void el.play().catch(() => {
+      const retry = () => {
+        void el.play().catch(() => {});
+        el.removeEventListener('loadedmetadata', retry);
+      };
+      el.addEventListener('loadedmetadata', retry);
+    });
+  }, [bindTick]);
 
   const stop = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -57,10 +95,14 @@ export function useCamera({
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => {});
-      }
+      // Binding happens in the effect below, not here.
+      //
+      // This used to be `if (videoRef.current) { ...attach... }` followed
+      // unconditionally by setState('live'). When the <video> had not mounted
+      // yet — or remounted on a phase change — the stream was acquired and
+      // silently never attached, while the app still reported itself live. The
+      // member saw the permission prompt, then a black rectangle forever.
+      setBindTick((n) => n + 1);
       setState('live');
     } catch (err) {
       const name = err instanceof DOMException ? err.name : '';
@@ -122,7 +164,7 @@ export function useCamera({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { videoRef, state, error, start, stop, capture, quality };
+  return { videoRef, attachVideo, state, error, start, stop, capture, quality };
 }
 
 /** Downscales an uploaded file to a base64 JPEG so it clears the size cap. */

@@ -76,7 +76,7 @@ export function DojoClient({
   const [saveNote, setSaveNote] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const { videoRef, state: camState, error: camError, start: startCam, stop: stopCam } = useCamera({
+  const { videoRef, attachVideo, state: camState, error: camError, start: startCam, stop: stopCam } = useCamera({
     facingMode: 'user',
   });
 
@@ -395,7 +395,8 @@ export function DojoClient({
             <div className="aspect-[3/4] w-full border border-edge bg-black">
               <div className="relative h-full w-full">
                 <video
-                  ref={videoRef}
+                  ref={attachVideo}
+                  autoPlay
                   playsInline
                   muted
                   className={cn(
@@ -444,7 +445,8 @@ export function DojoClient({
           <motion.div key="live" {...fade} className="space-y-3">
             <div className="relative aspect-[3/4] w-full overflow-hidden border border-edge bg-black">
               <video
-                ref={videoRef}
+                ref={attachVideo}
+                  autoPlay
                 playsInline
                 muted
                 className="h-full w-full scale-x-[-1] object-cover opacity-70"

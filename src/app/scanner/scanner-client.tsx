@@ -51,6 +51,7 @@ export function ScannerClient({
   const shotRef = useRef<string | null>(null);
   const {
     videoRef,
+    attachVideo,
     state,
     error: camError,
     start,
@@ -252,7 +253,8 @@ export function ScannerClient({
             <Panel brackets className="overflow-hidden">
               <div className="relative aspect-[3/4] bg-black">
                 <video
-                  ref={videoRef}
+                  ref={attachVideo}
+                  autoPlay
                   playsInline
                   muted
                   className={cn(

@@ -30,7 +30,7 @@ export function ConsoleScan({
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
-  const { videoRef, state, error, start, stop, capture } = useCamera({ autoStart: true });
+  const { videoRef, attachVideo, state, error, start, stop, capture } = useCamera({ autoStart: true });
 
   async function send(base64: string) {
     setBusy(true);
@@ -114,7 +114,8 @@ export function ConsoleScan({
 
       <div className="relative aspect-[4/3] w-full bg-black">
         <video
-          ref={videoRef}
+          ref={attachVideo}
+                  autoPlay
           playsInline
           muted
           className="h-full w-full object-cover"
