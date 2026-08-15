@@ -126,12 +126,8 @@ export function VoiceNote({
         <div className="font-mono text-micro uppercase tracking-[0.18em] text-gold">
           {'>>'} Portion check
         </div>
-        <p className="mt-1.5 font-mono text-read leading-relaxed text-phosphor">
+        <p className="mt-1.5 font-mono text-read text-phosphor">
           {prompt.ask}
-        </p>
-        <p className="mt-1 font-mono text-micro leading-relaxed text-dim">
-          A photo has no depth, so portion is the weakest part of the estimate. Saying
-          it out loud fixes more than editing the numbers does.
         </p>
       </div>
 
@@ -195,11 +191,11 @@ export function VoiceNote({
       </button>
 
       {blocked || note || error ? (
-        <p className="border-t border-edge px-3 py-2 font-mono text-micro leading-relaxed text-dim">
+        <p className="border-t border-edge px-3 py-2 font-mono text-read text-dim">
           {error || note}
         </p>
       ) : (
-        <p className="border-t border-edge px-3 py-2 font-mono text-micro leading-relaxed text-dim">
+        <p className="border-t border-edge px-3 py-2 font-mono text-read text-dim">
           Optional. Skip it and edit the numbers by hand if you&rsquo;d rather not talk.
         </p>
       )}

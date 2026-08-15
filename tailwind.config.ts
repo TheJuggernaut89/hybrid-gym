@@ -35,11 +35,22 @@ const config: Config = {
         mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        // Micro-typography: fixed, small, generously tracked.
-        micro: ['9px', { lineHeight: '1.3', letterSpacing: '0.18em' }],
-        meta: ['10px', { lineHeight: '1.4', letterSpacing: '0.14em' }],
-        data: ['12px', { lineHeight: '1.45', letterSpacing: '0.06em' }],
-        read: ['13px', { lineHeight: '1.6', letterSpacing: '0.01em' }],
+        // ── DATA & LABELS ──────────────────────────────────────────────
+        // The industrial voice: uppercase, tracked, tabular. Never a sentence.
+        // Tracking is legible here precisely because these are short, capital
+        // fragments the eye scans rather than reads.
+        micro: ['10px', { lineHeight: '1.4', letterSpacing: '0.16em' }],
+        meta: ['11px', { lineHeight: '1.45', letterSpacing: '0.12em' }],
+        data: ['13px', { lineHeight: '1.5', letterSpacing: '0.04em' }],
+
+        // ── PROSE ──────────────────────────────────────────────────────
+        // Sentences only, and the reason the app felt hard to read: running
+        // text was set at 13px with tracking, in a monospace face whose
+        // advance is already uniform. Extra tracking on top turns words into
+        // character streams. Zero tracking, generous leading for a dark theme.
+        read: ['15px', { lineHeight: '1.65', letterSpacing: '0' }],
+        // 16px specifically: iOS Safari auto-zooms any focused input below it.
+        lede: ['16px', { lineHeight: '1.6', letterSpacing: '0' }],
         // Macro-typography: fluid, massive, tight.
         h3: ['clamp(1.25rem, 5vw, 1.6rem)', { lineHeight: '0.95', letterSpacing: '-0.02em' }],
         h2: ['clamp(1.75rem, 8vw, 2.5rem)', { lineHeight: '0.9', letterSpacing: '-0.03em' }],

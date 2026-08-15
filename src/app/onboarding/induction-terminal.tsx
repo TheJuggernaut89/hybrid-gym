@@ -268,7 +268,7 @@ export function InductionTerminal({
                   <Row k="GOALS" v={goals.length ? goals.join(', ') : '—'} />
                 </dl>
                 {demo ? (
-                  <p className="mt-3 border-l-2 border-fight pl-2 font-mono text-meta leading-relaxed text-fight">
+                  <p className="mt-3 border-l-2 border-fight pl-2 font-mono text-read text-fight">
                     DEMO MODE — this dossier will not persist. Connect Supabase first.
                   </p>
                 ) : null}
@@ -277,7 +277,7 @@ export function InductionTerminal({
         </motion.div>
 
         {error ? (
-          <p className="mt-3 border-l-2 border-fight pl-2 font-mono text-meta leading-relaxed text-fight">
+          <p className="mt-3 border-l-2 border-fight pl-2 font-mono text-read text-fight">
             {error}
           </p>
         ) : null}
@@ -322,7 +322,7 @@ function StepBlock({
     <div className="space-y-4">
       <div>
         <h2 className="text-h2 text-phosphor">{prompt}</h2>
-        <p className="mt-1 font-mono text-meta leading-relaxed text-dim">
+        <p className="mt-1 font-mono text-read text-dim">
           &gt; {hint}
         </p>
       </div>

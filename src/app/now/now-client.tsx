@@ -95,7 +95,7 @@ export function NowClient({
             <div className="font-mono text-micro uppercase text-gold">
               {protection.label} — protected window
             </div>
-            <p className="mt-1 font-mono text-data leading-relaxed text-dim">
+            <p className="mt-1 font-mono text-read text-dim">
               Tempo is re-based for this period. Missing sessions here is the calendar, not a
               lapse.
             </p>
@@ -149,7 +149,7 @@ export function NowClient({
           className="mt-2"
         />
 
-        <p className="mt-2 font-mono text-micro leading-relaxed text-faint">
+        <p className="mt-2 font-mono text-read text-dim">
           {tempo.toHold > 0
             ? `${tempo.toHold} more session${tempo.toHold > 1 ? 's' : ''} to hold ${tempo.band}. This number moves slowly — one miss is not a reset.`
             : `Holding ${tempo.band}. Floor is ${bandFloor(tempo.band).toFixed(2)}/wk.`}
@@ -175,7 +175,7 @@ export function NowClient({
                 minute: '2-digit',
               })}
             </h2>
-            <p className="mt-1 font-mono text-data leading-relaxed text-dim">
+            <p className="mt-1 font-mono text-read text-dim">
               Did it happen? One tap either way — no lecture attached to the answer.
             </p>
 
@@ -245,7 +245,7 @@ export function NowClient({
             {upcoming.coachName} · {upcoming.durationMin} min
           </div>
 
-          <p className="mt-2 border-l-2 border-gold pl-2 font-mono text-data leading-relaxed text-phosphor">
+          <p className="mt-2 border-l-2 border-gold pl-2 font-mono text-read text-phosphor">
             {tacticalLine(upcoming)}
           </p>
 
@@ -310,11 +310,11 @@ export function NowClient({
             <div className="font-mono text-micro uppercase tracking-[0.18em] text-gold">
               {'>>'} Want a nudge before it?
             </div>
-            <p className="mt-1.5 font-mono text-read leading-relaxed text-phosphor">
+            <p className="mt-1.5 font-mono text-read text-phosphor">
               90 minutes out, then 30. Enough to beat the jam, not enough to nag.
             </p>
             {isIos() && !isStandalone() ? (
-              <p className="mt-1.5 font-mono text-micro leading-relaxed text-dim">
+              <p className="mt-1.5 font-mono text-read text-dim">
                 On iPhone this needs the app on your Home Screen first — Share, then Add
                 to Home Screen.
               </p>
@@ -420,7 +420,7 @@ export function NowClient({
             <UnitTag label="Minted" value={String(shields.minted)} />
           </div>
 
-          <p className="px-3 pb-3 font-mono text-micro leading-relaxed text-faint">
+          <p className="px-3 pb-3 font-mono text-read text-dim">
             Every 5 sessions mints a shield. Spending one protects a week you already know you
             will miss — you choose when, and you say why. Shields you did not earn would not
             mean anything.
@@ -456,7 +456,7 @@ export function NowClient({
         </Panel>
 
         {note ? (
-          <p className="mt-3 border-l-2 border-gold pl-2 font-mono text-data leading-relaxed text-phosphor">
+          <p className="mt-3 border-l-2 border-gold pl-2 font-mono text-read text-phosphor">
             {note}
           </p>
         ) : null}

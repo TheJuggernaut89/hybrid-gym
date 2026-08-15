@@ -150,7 +150,7 @@ export default async function HudPage() {
                 <HazardBar />
                 <div className="px-3 py-2.5">
                   <div className="font-mono text-micro uppercase text-fight">Medical flags</div>
-                  <p className="mt-1 font-mono text-data leading-relaxed text-phosphor">
+                  <p className="mt-1 font-mono text-read text-phosphor">
                     {fighter.medical_conditions.join(' · ')}
                   </p>
                 </div>
@@ -160,7 +160,7 @@ export default async function HudPage() {
             {fighter.goals.length > 0 ? (
               <div className="border-t border-edge px-3 py-2.5">
                 <div className="font-mono text-micro uppercase text-faint">Objectives</div>
-                <p className="mt-1 font-mono text-data leading-relaxed text-dim">
+                <p className="mt-1 font-mono text-read text-dim">
                   {fighter.goals.join(' · ')}
                 </p>
               </div>
@@ -174,7 +174,7 @@ export default async function HudPage() {
               right={`${String(feed.length).padStart(2, '0')} entries`}
             />
             {feed.length === 0 ? (
-              <p className="p-3 font-mono text-data text-dim">
+              <p className="p-3 font-mono text-read text-dim">
                 Nothing logged yet. Go scan a machine.
               </p>
             ) : (
@@ -198,11 +198,11 @@ export default async function HudPage() {
                         +{entry.xp}
                       </span>
                     </div>
-                    <p className="telemetry mt-1 font-mono text-micro uppercase text-faint">
+                    <p className="telemetry mt-1 font-mono text-meta uppercase text-dim">
                       {entry.detail}
                     </p>
                     {entry.comment ? (
-                      <p className="mt-1.5 border-l-2 border-edgeBright pl-2 font-mono text-data leading-relaxed text-dim">
+                      <p className="mt-1.5 border-l-2 border-edgeBright pl-2 font-mono text-read text-dim">
                         {entry.comment}
                       </p>
                     ) : null}

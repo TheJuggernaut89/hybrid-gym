@@ -77,7 +77,7 @@ export function StreakTracker({
         ))}
       </div>
 
-      <p className="px-3 pb-3 pt-2 font-mono text-micro leading-relaxed text-faint">
+      <p className="px-3 pb-3 pt-2 font-mono text-read text-dim">
         A missed day is absorbed by a shield. One shield regenerates every 7 consecutive
         active days.
       </p>
@@ -87,7 +87,7 @@ export function StreakTracker({
           {loggedToday ? 'Day already logged' : pending ? 'Logging…' : 'Log a recovery day'}
         </Button>
         {note ? (
-          <p className="mt-2 border-l-2 border-engage pl-2 font-mono text-data leading-relaxed text-engage">
+          <p className="mt-2 border-l-2 border-engage pl-2 font-mono text-read text-engage">
             {note}
           </p>
         ) : null}

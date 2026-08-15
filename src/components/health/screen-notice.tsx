@@ -65,11 +65,11 @@ export function ScreenNotice({ flags, className }: { flags: Flag[]; className?: 
                 </h3>
               </div>
 
-              <p className="mt-1.5 font-mono text-micro uppercase text-dim">
+              <p className="mt-1.5 font-mono text-meta uppercase text-dim">
                 {f.interaction.conditionLabel} — you declared &ldquo;{f.matchedCondition}&rdquo;
               </p>
 
-              <p className="mt-1.5 border-l-2 border-edgeBright pl-2 font-mono text-data leading-relaxed text-dim">
+              <p className="mt-1.5 border-l-2 border-edgeBright pl-2 font-mono text-read text-dim">
                 {f.interaction.note}
               </p>
             </li>
@@ -78,7 +78,7 @@ export function ScreenNotice({ flags, className }: { flags: Flag[]; className?: 
       </ul>
 
       {/* A safety disclaimer that fails contrast is not a disclaimer. */}
-      <p className="border-t border-edge px-3 py-2.5 font-mono text-meta leading-relaxed text-dim">
+      <p className="border-t border-edge px-3 py-2.5 font-mono text-read text-dim">
         {DISCLAIMER}
       </p>
     </section>

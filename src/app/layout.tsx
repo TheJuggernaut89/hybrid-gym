@@ -41,14 +41,13 @@ export const viewport: Viewport = {
   themeColor: '#0B0B0B',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
   viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${mono.variable}`}>
-      <body className="min-h-[100dvh] bg-canvas text-phosphor antialiased">
+      <body className="min-h-[100dvh] bg-canvas text-phosphor">
         <div className="min-h-[100dvh]">{children}</div>
         {/* The CRT scanline and grain overlays used to live here, fixed over the
             whole document at z-index 9999. They read as a texture on a desktop

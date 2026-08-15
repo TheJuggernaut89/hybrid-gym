@@ -118,7 +118,7 @@ export function VoiceMeal({ conditions }: { conditions: string[] }) {
     return (
       <Panel>
         <PanelHeader label="Logged" accent="engage" />
-        <p className="p-3 font-mono text-read leading-relaxed text-phosphor">{note}</p>
+        <p className="p-3 font-mono text-read text-phosphor">{note}</p>
       </Panel>
     );
   }
@@ -135,11 +135,11 @@ export function VoiceMeal({ conditions }: { conditions: string[] }) {
             <Stat label="Fats" value={String(Math.round(data.fats_g ?? 0))} unit="G" />
           </div>
           <div className="border-t border-edge px-3 py-2">
-            <p className="font-mono text-meta leading-relaxed text-dim">{data.portion_note}</p>
-            <p className="mt-1.5 font-mono text-micro leading-relaxed text-dim">
+            <p className="font-mono text-read text-dim">{data.portion_note}</p>
+            <p className="mt-1.5 font-mono text-read text-dim">
               <span className="text-gold">FROM</span> &ldquo;{transcript}&rdquo;
             </p>
-            <p className="mt-1.5 font-mono text-micro text-dim">
+            <p className="mt-1.5 font-mono text-read text-dim">
               CONFIDENCE {data.confidence.toUpperCase()} · Estimated from a description, with
               no photo. Edit on the day&rsquo;s log if it is off.
             </p>
@@ -151,7 +151,7 @@ export function VoiceMeal({ conditions }: { conditions: string[] }) {
         {coachLine ? (
           <Panel>
             <PanelHeader label="Coach" accent="fight" />
-            <p className="p-3 font-mono text-data italic leading-relaxed text-phosphor">
+            <p className="p-3 font-mono text-read italic text-phosphor">
               &ldquo;{coachLine}&rdquo;
             </p>
           </Panel>
@@ -197,7 +197,7 @@ export function VoiceMeal({ conditions }: { conditions: string[] }) {
           className="w-full resize-none bg-canvas px-3 py-2.5 font-mono text-read leading-relaxed text-phosphor outline-none focus:ring-2 focus:ring-gold"
         />
         {note ? (
-          <p className="border-t border-edge px-3 py-2 font-mono text-micro text-dim">{note}</p>
+          <p className="border-t border-edge px-3 py-2 font-mono text-read text-dim">{note}</p>
         ) : null}
         <div className="grid grid-cols-2 gap-px bg-edge">
           <button
@@ -229,12 +229,8 @@ export function VoiceMeal({ conditions }: { conditions: string[] }) {
         <div className="font-mono text-micro uppercase tracking-[0.18em] text-gold">
           {'>>'} No photo? Say it instead
         </div>
-        <p className="mt-1.5 font-mono text-read leading-relaxed text-phosphor">
+        <p className="mt-1.5 font-mono text-read text-phosphor">
           What did you eat, and roughly how much?
-        </p>
-        <p className="mt-1 font-mono text-micro leading-relaxed text-dim">
-          &ldquo;Nasi lemak, one fist of rice, half a palm of chicken, teh tarik kurang
-          manis.&rdquo; Portions in fists and palms are more accurate than a photo, not less.
         </p>
       </div>
 
@@ -282,7 +278,7 @@ export function VoiceMeal({ conditions }: { conditions: string[] }) {
       {blocked || note || error ? (
         <>
           <HazardBar tone="gold" />
-          <p className="px-3 py-2 font-mono text-micro leading-relaxed text-dim">
+          <p className="px-3 py-2 font-mono text-read text-dim">
             {error || note}
           </p>
         </>

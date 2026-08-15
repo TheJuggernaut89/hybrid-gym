@@ -56,7 +56,7 @@ export function LoginTerminal({
         className="border border-engage bg-surface p-5"
       >
         <h2 className="text-h2 text-engage">LINK DISPATCHED</h2>
-        <p className="mt-2 font-mono text-data leading-relaxed text-dim">
+        <p className="mt-2 font-mono text-read text-dim">
           Check <span className="text-phosphor">{email}</span>. Tap the magic link on this
           device to drop into the HUD.
         </p>
@@ -100,7 +100,7 @@ export function LoginTerminal({
         />
 
         {phase === 'error' && message ? (
-          <p className="mt-3 border-l-2 border-fight pl-2 font-mono text-meta leading-relaxed text-fight">
+          <p className="mt-3 border-l-2 border-fight pl-2 font-mono text-read text-fight">
             {message}
           </p>
         ) : null}
@@ -109,7 +109,7 @@ export function LoginTerminal({
           {phase === 'sending' ? 'DISPATCHING…' : 'REQUEST ACCESS'}
         </Button>
 
-        <p className="mt-3 font-mono text-micro leading-relaxed text-faint">
+        <p className="mt-3 font-mono text-read text-dim">
           No password. One link, one session. It expires — don&rsquo;t sit on it.
         </p>
       </div>

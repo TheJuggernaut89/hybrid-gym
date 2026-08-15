@@ -329,7 +329,7 @@ export function BragStudio({ card }: { card: BragCard }) {
       </div>
 
       {note ? (
-        <p className="border-l-2 border-gold pl-2 font-mono text-meta leading-relaxed text-dim">
+        <p className="border-l-2 border-gold pl-2 font-mono text-read text-dim">
           {note}
         </p>
       ) : null}

@@ -168,16 +168,11 @@ export function ConsoleScan({
       {note || error ? (
         <>
           <HazardBar tone="gold" />
-          <p className="px-3 py-2 font-mono text-micro leading-relaxed text-dim">
+          <p className="px-3 py-2 font-mono text-read text-dim">
             {note || error}
           </p>
         </>
-      ) : (
-        <p className="border-t border-edge px-3 py-2 font-mono text-micro leading-relaxed text-dim">
-          Reads the elapsed time off the display. You still set the effort — a console
-          cannot tell how hard it felt.
-        </p>
-      )}
+      ) : null}
     </section>
   );
 }

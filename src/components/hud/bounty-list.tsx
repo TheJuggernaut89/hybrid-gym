@@ -23,7 +23,7 @@ export function BountyList({ bounties }: { bounties: BountyProgress[] }) {
         right={`${String(cleared).padStart(2, '0')}/${String(active.length).padStart(2, '0')} cleared`}
       />
       {active.length === 0 ? (
-        <p className="p-3 font-mono text-data text-dim">
+        <p className="p-3 font-mono text-read text-dim">
           No bounties posted. Seed the <span className="text-gold">bounties</span> table.
         </p>
       ) : (
@@ -52,7 +52,7 @@ export function BountyList({ bounties }: { bounties: BountyProgress[] }) {
                 </span>
               </div>
 
-              <p className="mt-1 pl-6 font-mono text-micro leading-relaxed text-faint">
+              <p className="mt-1 pl-6 font-mono text-read text-dim">
                 {b.description}
               </p>
 
