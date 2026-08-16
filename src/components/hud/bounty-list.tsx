@@ -9,7 +9,6 @@ const UNIT: Record<string, string> = {
   sessions: 'SESSIONS',
   home_sessions: 'DRILLS',
   accuracy_avg: '% FORM',
-  streak: 'DAYS',
 };
 
 export function BountyList({ bounties }: { bounties: BountyProgress[] }) {

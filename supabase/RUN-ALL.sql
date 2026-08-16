@@ -1249,3 +1249,200 @@ grant execute on function public.due_slot_reminders(timestamptz) to service_role
 --   select grantee, privilege_type from information_schema.role_routine_grants
 --   where routine_name = 'due_slot_reminders';
 -- Expect service_role only.
+
+
+-- ###########################################################################
+-- 009_fix_declaration_timezone.sql
+-- REPAIR: declarations written 8 hours off by the UTC bug
+-- ###########################################################################
+
+-- Repair only; a fresh database has nothing to fix and this is a no-op. The
+-- standalone migration also prints a report of rows it could not explain —
+-- run that file directly if you are fixing an existing project.
+--
+-- Idempotent: after the first pass no row satisfies both predicates.
+update public.slot_declarations d
+   set scheduled_for = d.scheduled_for - interval '8 hours'
+  from public.gym_slots g
+ where d.gym_slot_id = g.id
+   and d.status = 'declared'
+   and (
+     (d.scheduled_for at time zone 'Asia/Kuala_Lumpur')::time <> g.start_time
+     or extract(dow from (d.scheduled_for at time zone 'Asia/Kuala_Lumpur')) <> g.day_of_week
+   )
+   and ((d.scheduled_for - interval '8 hours') at time zone 'Asia/Kuala_Lumpur')::time = g.start_time
+   and extract(dow from ((d.scheduled_for - interval '8 hours') at time zone 'Asia/Kuala_Lumpur')) = g.day_of_week;
+
+
+-- ###########################################################################
+-- 010_xp_awarded_once.sql
+-- BUGFIX: log_session paid for the same session on every replay
+-- ###########################################################################
+
+create or replace function public.log_session(
+  p_fighter_id    uuid,
+  p_session_type  text,
+  p_stat          text,
+  p_duration_min  int,
+  p_rpe           int,
+  p_label         text default null,
+  p_declaration_id uuid default null
+)
+returns public.fighters
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_load       int;
+  v_session_id uuid;
+  v_fighter    public.fighters;
+begin
+  if auth.uid() is null or auth.uid() <> p_fighter_id then
+    raise exception 'not authorised';
+  end if;
+
+  if p_rpe < 1 or p_rpe > 10 then
+    raise exception 'rpe out of range';
+  end if;
+  if p_duration_min <= 0 or p_duration_min > 300 then
+    raise exception 'duration out of range';
+  end if;
+
+  v_load := p_duration_min * p_rpe;
+
+  insert into public.training_sessions
+    (fighter_id, session_type, stat, duration_min, rpe, load_au, label, declaration_id)
+  values
+    (p_fighter_id, p_session_type, p_stat, p_duration_min, p_rpe, v_load, p_label, p_declaration_id)
+  on conflict (declaration_id) where declaration_id is not null do nothing
+  returning id into v_session_id;
+
+  -- Deduped by the partial unique index: already logged, already paid for.
+  if v_session_id is null then
+    select * into v_fighter from public.fighters where id = p_fighter_id;
+    return v_fighter;
+  end if;
+
+  select * into v_fighter
+  from public.award_xp(p_fighter_id, p_stat, v_load, false);
+
+  return v_fighter;
+end $$;
+
+revoke all on function public.log_session(uuid, text, text, int, int, text, uuid) from public;
+grant execute on function public.log_session(uuid, text, text, int, int, text, uuid) to authenticated;
+
+
+-- ###########################################################################
+-- 011_send_each_reminder_once.sql
+-- BUGFIX: T-30 buzzed two or three times per class
+-- ###########################################################################
+
+create table if not exists public.slot_notifications (
+  declaration_id uuid        not null references public.slot_declarations(id) on delete cascade,
+  phase          text        not null check (phase in ('approaching', 'imminent')),
+  endpoint       text        not null,
+  sent_at        timestamptz not null default now(),
+  primary key (declaration_id, phase, endpoint)
+);
+
+alter table public.slot_notifications enable row level security;
+revoke all on table public.slot_notifications from anon, authenticated;
+
+create or replace function public.due_slot_reminders(p_now timestamptz default now())
+returns table (
+  fighter_id     uuid,
+  declaration_id uuid,
+  endpoint       text,
+  p256dh         text,
+  auth           text,
+  class_name     text,
+  coach_name     text,
+  scheduled_for  timestamptz,
+  phase          text
+)
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null then
+    raise exception 'not authorised';
+  end if;
+
+  return query
+  with due as (
+    select
+      d.fighter_id    as fighter_id,
+      d.id            as declaration_id,
+      s.endpoint      as endpoint,
+      s.p256dh        as p256dh,
+      s.auth          as auth,
+      d.class_name    as class_name,
+      d.coach_name    as coach_name,
+      d.scheduled_for as scheduled_for,
+      case
+        when d.scheduled_for - p_now between interval '25 minutes' and interval '35 minutes'
+          then 'imminent'
+        else 'approaching'
+      end             as phase
+    from public.slot_declarations d
+    join public.push_subscriptions s
+      on s.fighter_id = d.fighter_id
+     and s.failed_at is null
+    where d.status = 'declared'
+      and (
+        d.scheduled_for - p_now between interval '85 minutes' and interval '95 minutes'
+        or
+        d.scheduled_for - p_now between interval '25 minutes' and interval '35 minutes'
+      )
+  ),
+  claimed as (
+    insert into public.slot_notifications (declaration_id, phase, endpoint)
+    select due.declaration_id, due.phase, due.endpoint from due
+    on conflict (declaration_id, phase, endpoint) do nothing
+    returning declaration_id, phase, endpoint
+  )
+  select
+    due.fighter_id, due.declaration_id, due.endpoint, due.p256dh, due.auth,
+    due.class_name, due.coach_name, due.scheduled_for, due.phase
+  from due
+  join claimed c
+    on c.declaration_id = due.declaration_id
+   and c.phase          = due.phase
+   and c.endpoint       = due.endpoint;
+end $$;
+
+revoke all on function public.due_slot_reminders(timestamptz) from anon;
+revoke all on function public.due_slot_reminders(timestamptz) from public;
+revoke all on function public.due_slot_reminders(timestamptz) from authenticated;
+grant execute on function public.due_slot_reminders(timestamptz) to service_role;
+
+create or replace function public.release_slot_notification(
+  p_declaration_id uuid,
+  p_phase          text,
+  p_endpoint       text
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is not null then
+    raise exception 'not authorised';
+  end if;
+
+  delete from public.slot_notifications
+   where declaration_id = p_declaration_id
+     and phase          = p_phase
+     and endpoint       = p_endpoint;
+end $$;
+
+revoke all on function public.release_slot_notification(uuid, text, text) from anon;
+revoke all on function public.release_slot_notification(uuid, text, text) from public;
+revoke all on function public.release_slot_notification(uuid, text, text) from authenticated;
+grant execute on function public.release_slot_notification(uuid, text, text) to service_role;

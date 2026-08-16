@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { motion } from 'framer-motion';
 import { Check, ChevronDown, Shield, TrendingDown, TrendingUp, Minus } from 'lucide-react';
 import { Panel, PanelHeader } from '@/components/ui/panel';
@@ -8,8 +8,16 @@ import { Button } from '@/components/ui/button';
 import { SegmentMeter, HazardBar, UnitTag } from '@/components/ui/industrial';
 import {
   DECLINE_REASONS,
+  SHIELD_REASONS,
   DOWNGRADES,
-  DAY_LABEL,
+  gymDayTime,
+  gymTime,
+  gymDay,
+  gymInstant,
+  nodLine,
+  seatLine,
+  FLOOR_KINDS,
+  FLOOR_HOURS,
   slotPhase,
   tacticalLine,
   type DeclineReason,
@@ -18,6 +26,7 @@ import {
 } from '@/lib/slots';
 import { bandFloor, type ShieldState, type Tempo, type ProtectedWindow } from '@/lib/tempo';
 import { declareSlot, resolveSlot, spendShield } from '@/app/actions/slots';
+import { setGymVisibility } from '@/app/actions/fighter';
 import { pushSupport, subscribeToPush, isIos, isStandalone } from '@/lib/push';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +39,11 @@ interface Option {
   coachName: string;
   durationMin: number;
   atISO: string;
+  /** Opted-in nicknames already declared against this session. */
+  mates: string[];
+  /** Null when the class has no capacity set — which is the default. */
+  taken: number | null;
+  capacity: number | null;
 }
 
 const SPRING = { type: 'spring' as const, stiffness: 460, damping: 32 };
@@ -41,6 +55,7 @@ export function NowClient({
   upcoming,
   lapsed,
   options,
+  askVisibility = false,
 }: {
   tempo: Tempo;
   shields: ShieldState;
@@ -48,16 +63,56 @@ export function NowClient({
   upcoming: SlotDeclaration | null;
   lapsed: SlotDeclaration[];
   options: Option[];
+  /** Member has no nickname yet — offer the opt-in once. */
+  askVisibility?: boolean;
 }) {
   const [pending, startTransition] = useTransition();
   const [note, setNote] = useState('');
   const [showPicker, setShowPicker] = useState(!upcoming);
   const [showShield, setShowShield] = useState(false);
+  /** Days from today for the week a shield will cover. 0 = this week. */
+  const [shieldWeek, setShieldWeek] = useState(0);
+  const [nickname, setNickname] = useState('');
+  const [visibilityDone, setVisibilityDone] = useState(false);
+  const [pickerTab, setPickerTab] = useState<'class' | 'floor'>('class');
+  const [floorKind, setFloorKind] = useState<'floor' | 'cardio'>('floor');
+  const [floorDay, setFloorDay] = useState(0);
   const [askReminders, setAskReminders] = useState(false);
   const [reminderBusy, setReminderBusy] = useState(false);
 
-  const phase = upcoming ? slotPhase(upcoming) : null;
-  const toResolve = lapsed[0] ?? null;
+  /**
+   * A ticking clock, because the slot phase is not a label — the "Log it"
+   * button and the downgrade offers are gated on it.
+   *
+   * `force-dynamic` on the page re-runs the server component for a NAVIGATION.
+   * It does nothing for an installed PWA resumed from the background, which is
+   * exactly how this screen is used: open it before class, put the phone in a
+   * bag, come back afterwards. Computed once at render, `phase` was still
+   * `approaching` an hour later — the member was offered a downgrade for a
+   * class they had just finished, and had no way to log it.
+   *
+   * The visibility listener matters as much as the interval: a backgrounded tab
+   * has its timers throttled hard, so the first thing to do on resume is
+   * recompute rather than wait out the remainder of a stale tick.
+   */
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const tick = () => setNow(new Date());
+    const id = window.setInterval(tick, 30_000);
+    const onVisibility = () => {
+      if (!document.hidden) tick();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, []);
+
+  const phase = upcoming ? slotPhase(upcoming, now) : null;
+  // `lapsed` is computed on the server too, so a slot that runs out while this
+  // page is open would never appear in it. Catch that transition here.
+  const toResolve = lapsed[0] ?? (phase === 'lapsed' ? upcoming : null);
 
   function run(
     fn: () => Promise<{ ok: boolean; message: string }>,
@@ -95,9 +150,14 @@ export function NowClient({
             <div className="font-mono text-micro uppercase text-gold">
               {protection.label} — protected window
             </div>
+            {/* This used to assert "Tempo is re-based for this period" while
+                computeTempo took no protection argument at all and counted
+                Raya exactly like any other week. It is true now, and it says
+                how much rather than asking to be believed. */}
             <p className="mt-1 font-sans text-read text-dim">
-              Tempo is re-based for this period. Missing sessions here is the calendar, not a
-              lapse.
+              {tempo.protectedDays > 0
+                ? `${tempo.protectedDays} ${tempo.protectedDays === 1 ? 'day' : 'days'} discounted from your tempo window. Missing sessions here is the calendar, not a lapse.`
+                : 'Missing sessions here is the calendar, not a lapse.'}
             </p>
           </div>
         </>
@@ -116,12 +176,7 @@ export function NowClient({
           <div className="px-3 py-3">
             <div className="font-mono text-micro uppercase text-fight">Unresolved slot</div>
             <h2 className="display mt-1 text-h2 text-phosphor">
-              {toResolve.className} —{' '}
-              {new Date(toResolve.scheduledFor).toLocaleString('en-GB', {
-                weekday: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {toResolve.className} — {gymDayTime(toResolve.scheduledFor)}
             </h2>
             <p className="mt-1 font-sans text-read text-dim">
               Did it happen? One tap either way — no lecture attached to the answer.
@@ -141,7 +196,7 @@ export function NowClient({
             <div className="mt-2 font-mono text-micro uppercase text-faint">
               Or what got in the way
             </div>
-            <div className="mt-1.5 grid grid-cols-5 gap-1">
+            <div className="mt-1.5 grid grid-cols-3 gap-1">
               {DECLINE_REASONS.map((r) => (
                 <button
                   key={r.code}
@@ -180,21 +235,18 @@ export function NowClient({
                     : 'In progress'}
             </span>
             <span className="telemetry font-mono text-micro uppercase text-gold">
-              {new Date(upcoming.scheduledFor).toLocaleString('en-GB', {
-                weekday: 'short',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {gymDayTime(upcoming.scheduledFor)}
             </span>
           </div>
 
           <h2 className="display mt-1 text-h2 text-phosphor">{upcoming.className}</h2>
           <div className="font-mono text-micro uppercase text-faint">
-            {upcoming.coachName} · {upcoming.durationMin} min
+            {upcoming.coachName ? `${upcoming.coachName} · ` : ''}
+            {upcoming.durationMin} min
           </div>
 
           <p className="mt-2 border-l-2 border-gold pl-2 font-sans text-read text-phosphor">
-            {tacticalLine(upcoming)}
+            {tacticalLine(upcoming, now)}
           </p>
 
           {phase === 'active' ? (
@@ -327,7 +379,131 @@ export function NowClient({
         </button>
 
         {showPicker ? (
-          <ul className="rule-grid grid-cols-1 border-t border-edge">
+          <div className="border-t border-edge">
+            {/* Classes or the floor.
+                /now used to offer eight martial-arts rows and nothing else, so
+                a member who lifts and never takes a class had no control on
+                the landing screen at all — and push permission is only ever
+                offered on the declare path, so the app could not reach them. */}
+            <div className="rule-grid grid-cols-2">
+              {(
+                [
+                  { key: 'class', label: 'Classes' },
+                  { key: 'floor', label: 'Floor & cardio' },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  onClick={() => setPickerTab(t.key)}
+                  className={cn(
+                    'min-h-11 px-3 py-2 font-mono text-micro font-bold uppercase tracking-[0.14em] [touch-action:manipulation]',
+                    pickerTab === t.key
+                      ? 'bg-gold text-canvas'
+                      : 'bg-canvas text-dim hover:text-gold',
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {pickerTab === 'floor' ? (
+              <div className="space-y-3 px-3 py-3">
+                <div>
+                  <div className="font-mono text-micro uppercase text-faint">What</div>
+                  <div className="mt-1.5 grid grid-cols-2 gap-1">
+                    {FLOOR_KINDS.map((k) => (
+                      <button
+                        key={k.kind}
+                        type="button"
+                        onClick={() => setFloorKind(k.kind)}
+                        className={cn(
+                          'min-h-11 border px-2 py-2 text-left [touch-action:manipulation]',
+                          floorKind === k.kind
+                            ? 'border-gold bg-gold/10'
+                            : 'border-edge bg-canvas hover:border-gold',
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'font-mono text-micro uppercase',
+                            floorKind === k.kind ? 'text-gold' : 'text-dim',
+                          )}
+                        >
+                          {k.label}
+                        </div>
+                        <div className="font-sans text-micro text-faint">{k.blurb}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-mono text-micro uppercase text-faint">When</div>
+                  <div className="mt-1.5 grid grid-cols-4 gap-1">
+                    {Array.from({ length: 7 }, (_, i) => i).map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => setFloorDay(d)}
+                        className={cn(
+                          'min-h-11 border px-1 py-2 font-mono text-micro uppercase [touch-action:manipulation]',
+                          floorDay === d
+                            ? 'border-gold bg-gold/10 text-gold'
+                            : 'border-edge bg-canvas text-dim hover:border-gold',
+                        )}
+                      >
+                        {d === 0 ? 'Today' : d === 1 ? 'Tmrw' : gymDay(gymInstant(d, '12:00', now))}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="font-mono text-micro uppercase text-faint">
+                    What time — one tap locks it in
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-4 gap-1">
+                    {FLOOR_HOURS.map((hh) => {
+                      const at = gymInstant(floorDay, hh, now);
+                      const past = at.getTime() <= now.getTime();
+                      const spec = FLOOR_KINDS.find((k) => k.kind === floorKind)!;
+                      return (
+                        <button
+                          key={hh}
+                          type="button"
+                          disabled={pending || past}
+                          onClick={() =>
+                            run(
+                              () =>
+                                declareSlot({
+                                  gymSlotId: null,
+                                  kind: spec.kind,
+                                  className: spec.label,
+                                  coachName: null,
+                                  scheduledFor: at.toISOString(),
+                                  durationMin: spec.durationMin,
+                                }),
+                              { offerReminders: true },
+                            )
+                          }
+                          className={cn(
+                            'min-h-11 border px-1 py-2 font-mono text-micro uppercase [touch-action:manipulation]',
+                            past
+                              ? 'border-edge bg-canvas text-edgeBright'
+                              : 'border-edge bg-canvas text-dim hover:border-gold hover:text-gold',
+                          )}
+                        >
+                          {hh}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+          <ul className="rule-grid grid-cols-1">
             {options.map((o) => {
               const at = new Date(o.atISO);
               return (
@@ -351,12 +527,28 @@ export function NowClient({
                     className="flex min-h-11 w-full items-baseline gap-3 px-3 py-2.5 text-left hover:bg-gold/5 [touch-action:manipulation]"
                   >
                     <span className="telemetry w-16 shrink-0 font-mono text-micro uppercase text-gold">
-                      {DAY_LABEL[at.getDay()]}{' '}
-                      {at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                      {gymDay(at)} {gymTime(at)}
                     </span>
-                    <span className="display min-w-0 flex-1 truncate text-h3 text-phosphor">
-                      {o.className}
+                    <span className="min-w-0 flex-1">
+                      <span className="display block truncate text-h3 text-phosphor">
+                        {o.className}
+                      </span>
+                      {nodLine(o.mates) ? (
+                        <span className="block truncate font-mono text-micro uppercase text-engage">
+                          {nodLine(o.mates)}
+                        </span>
+                      ) : null}
                     </span>
+                    {seatLine(o.taken, o.capacity) ? (
+                      <span
+                        className={cn(
+                          'shrink-0 font-mono text-micro uppercase',
+                          seatLine(o.taken, o.capacity) === 'Full' ? 'text-fight' : 'text-gold',
+                        )}
+                      >
+                        {seatLine(o.taken, o.capacity)}
+                      </span>
+                    ) : null}
                     <span className="shrink-0 font-mono text-micro uppercase text-faint">
                       {o.coachName.replace('Coach ', '')}
                     </span>
@@ -365,8 +557,61 @@ export function NowClient({
               );
             })}
           </ul>
+            )}
+          </div>
         ) : null}
       </section>
+
+      {/* ── THE NOD opt-in ──────────────────────────────────────────────
+          Shown once, to members who have no nickname yet. It has to live here
+          rather than in induction: /now only redirects to onboarding when
+          !fighter.onboarded, so everyone already using the app would never be
+          asked. Default is off and stays off unless this is answered. */}
+      {askVisibility && !visibilityDone ? (
+        <section className="border-b border-edge px-3 py-3">
+          <div className="font-mono text-micro uppercase text-engage">Training partners</div>
+          <p className="mt-1 font-sans text-read text-dim">
+            Want classmates to see you have booked the same session? Pick a name they would
+            recognise. You are hidden until you say otherwise, and you can turn it off later.
+          </p>
+          <input
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={24}
+            placeholder="Aina"
+            aria-label="Nickname shown to classmates"
+            className="mt-2 min-h-11 w-full border border-edge bg-canvas px-2 font-mono text-data uppercase text-phosphor placeholder:text-edgeBright focus:border-gold focus:outline-none"
+          />
+          <div className="mt-2 grid grid-cols-2 gap-1">
+            <Button
+              variant="engage"
+              disabled={pending || !nickname.trim()}
+              onClick={() =>
+                run(async () => {
+                  const r = await setGymVisibility(nickname, true);
+                  if (r.ok) setVisibilityDone(true);
+                  return r;
+                })
+              }
+            >
+              Show my name
+            </Button>
+            <Button
+              variant="ghost"
+              disabled={pending}
+              onClick={() =>
+                run(async () => {
+                  const r = await setGymVisibility('', false);
+                  if (r.ok) setVisibilityDone(true);
+                  return r;
+                })
+              }
+            >
+              Stay hidden
+            </Button>
+          </div>
+        </section>
+      ) : null}
 
       {/* ── TEMPO ───────────────────────────────────────────────────────
           Demoted, deliberately. This screen exists to catch someone
@@ -449,31 +694,76 @@ export function NowClient({
           </div>
 
           <p className="px-3 pb-3 font-sans text-read text-dim">
-            Every 5 sessions mints a shield. Spending one protects a week you already know you
-            will miss — you choose when, and you say why. Shields you did not earn would not
-            mean anything.
+            Every 5 sessions mints a shield. Spend one on a week you already know you will
+            miss and those seven days stop counting against your tempo — it holds where it is
+            instead of sagging. It will not push your tempo higher than you earned. Shields
+            you did not earn would not mean anything.
           </p>
 
           {shields.available > 0 ? (
             <div className="border-t border-edge p-3">
               {showShield ? (
-                <div className="grid grid-cols-5 gap-1">
-                  {DECLINE_REASONS.map((r) => (
-                    <button
-                      key={r.code}
-                      type="button"
-                      disabled={pending}
-                      onClick={() =>
-                        run(() =>
-                          spendShield(r.label, new Date().toISOString().slice(0, 10)),
-                        )
-                      }
-                      className="min-h-11 border border-edge bg-canvas px-1 py-2 font-mono text-micro uppercase text-dim hover:border-engage hover:text-engage [touch-action:manipulation]"
-                    >
-                      {r.label}
-                    </button>
-                  ))}
-                </div>
+                <>
+                  {/* "You choose when" was not true: the old call always sent
+                      today, and spend_shield rejected any future date — so a
+                      week you could see coming could not be protected until
+                      after it had cost you. */}
+                  <div className="font-mono text-micro uppercase text-faint">
+                    Which week
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-2 gap-1">
+                    {(
+                      [
+                        { key: 'this', label: 'This week', offset: 0 },
+                        { key: 'next', label: 'Next week', offset: 7 },
+                      ] as const
+                    ).map((w) => (
+                      <button
+                        key={w.key}
+                        type="button"
+                        onClick={() => setShieldWeek(w.offset)}
+                        className={cn(
+                          'min-h-11 border px-2 py-2 font-mono text-micro uppercase [touch-action:manipulation]',
+                          shieldWeek === w.offset
+                            ? 'border-engage bg-engage/10 text-engage'
+                            : 'border-edge bg-canvas text-dim hover:border-engage hover:text-engage',
+                        )}
+                      >
+                        {w.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 font-mono text-micro uppercase text-faint">
+                    And why
+                  </div>
+                  <div className="mt-1.5 grid grid-cols-5 gap-1">
+                    {/* SHIELD_REASONS, not DECLINE_REASONS — a shield is spent
+                        on a week the member will miss, so a gym-side reason
+                        like "class was full" has no meaning here. */}
+                    {SHIELD_REASONS.map((r) => (
+                      <button
+                        key={r.code}
+                        type="button"
+                        disabled={pending}
+                        title={r.gloss}
+                        onClick={() =>
+                          run(() =>
+                            spendShield(
+                              r.label,
+                              new Date(Date.now() + shieldWeek * 86_400_000)
+                                .toISOString()
+                                .slice(0, 10),
+                            ),
+                          )
+                        }
+                        className="min-h-11 border border-edge bg-canvas px-1 py-2 font-mono text-micro uppercase text-dim hover:border-engage hover:text-engage [touch-action:manipulation]"
+                      >
+                        {r.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
               ) : (
                 <Button variant="ghost" block onClick={() => setShowShield(true)}>
                   Spend a shield

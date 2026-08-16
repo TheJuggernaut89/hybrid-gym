@@ -1,10 +1,14 @@
-import type { Bounty, BountyProgress, Fighter, HomeSession, WorkoutLog } from './types';
+import type { Bounty, BountyProgress, HomeSession, WorkoutLog } from './types';
 import { startOfWeekUtc } from './utils';
 import { xpFromHome, xpFromOcr } from './xp';
 
+/**
+ * `fighter` used to be a parameter, read for exactly one thing: the streak
+ * count behind the STREAK_SEVEN bounty. That bounty is deactivated, so the
+ * argument went with it — bounty progress is derived entirely from logged work.
+ */
 export function computeBountyProgress(
   bounties: Bounty[],
-  fighter: Fighter,
   workouts: WorkoutLog[],
   homeSessions: HomeSession[],
   /** Universal sessions — the weights floor, classes, mats. */
@@ -41,7 +45,6 @@ export function computeBountyProgress(
     accuracy_avg: h.length
       ? h.reduce((sum, r) => sum + Number(r.form_accuracy_score ?? 0), 0) / h.length
       : 0,
-    streak: fighter.streak_count,
   };
 
   return bounties.map((b) => {

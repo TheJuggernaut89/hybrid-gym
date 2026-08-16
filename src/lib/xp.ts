@@ -124,21 +124,25 @@ export interface RadarAxis {
 }
 
 /**
- * Six axes: the five combat stats from the spec plus DISCIPLINE (streak-derived),
- * which makes the chart an actual hexagon rather than a pentagon.
+ * Five axes — the combat stats, each earned from logged load.
+ *
+ * There used to be a sixth, DISCIPLINE, derived from `streak_count`, and its
+ * stated justification was that it "makes the chart an actual hexagon rather
+ * than a pentagon". That is a reason about the shape of a polygon, and it cost
+ * more than it sounds: `award_xp` advances the streak only when the UTC date
+ * advances, and Malaysia is UTC+8, so a 07:00 class belongs to the previous UTC
+ * day. Members training four times a week sat at a streak of 1-3, which this
+ * curve rendered as 7-19 out of 100. The chart told the gym's most consistent
+ * members they were undisciplined.
+ *
+ * Adherence is TEMPO's job, on /now, where it is a rate rather than a fragile
+ * consecutive-day count. A pentagon is fine.
  */
 export function radarAxes(fighter: Fighter): RadarAxis[] {
-  const axes: RadarAxis[] = RADAR_ORDER.map(({ key, label }) => {
+  return RADAR_ORDER.map(({ key, label }) => {
     const raw = (fighter[`${key}_xp` as const] as number) ?? 0;
     return { key, label, value: curve(raw), raw };
   });
-  axes.push({
-    key: 'discipline',
-    label: 'DISCIPLINE',
-    value: Math.round(100 * (1 - Math.exp(-Math.max(fighter.streak_count, 0) / 14))),
-    raw: fighter.streak_count,
-  });
-  return axes;
 }
 
 export interface CrestTier {

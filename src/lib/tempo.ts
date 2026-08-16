@@ -10,8 +10,21 @@
  * and cannot drift out of sync with the logs.
  */
 
+import { gymDayKey } from './slots';
+
 export const WINDOW_DAYS = 28;
 const DAY_MS = 86_400_000;
+
+/**
+ * How much of the window a member may protect.
+ *
+ * Two of the four weeks. Without a cap the denominator can collapse to a
+ * handful of days, and a single session inside it reads as RELENTLESS.
+ */
+export const MAX_PROTECTED_DAYS = 14;
+
+/** A spent shield covers the ISO week it names, not the single day. */
+export const SHIELD_COVERS_DAYS = 7;
 
 export type TempoBand =
   | 'DORMANT'
@@ -36,6 +49,21 @@ export interface Tempo {
   daysSinceLast: number | null;
   /** Sessions needed this week to hold the current band. */
   toHold: number;
+  /**
+   * Days inside the window discounted by a spent shield or a calendar window.
+   * Zero means the figure above is the plain 28-day rate.
+   */
+  protectedDays: number;
+}
+
+export interface TempoOptions {
+  /**
+   * `shield_spends.covers_date` values — each the first day of a protected
+   * week.
+   */
+  shieldCovers?: string[];
+  /** Calendar windows (Raya, CNY, Ramadan) that overlap the trailing window. */
+  calendar?: Array<{ startISO: string; endISO: string }>;
 }
 
 const BANDS: Array<{ min: number; band: TempoBand }> = [
@@ -57,22 +85,101 @@ export function bandFloor(band: TempoBand): number {
   return BANDS.find((b) => b.band === band)?.min ?? 0;
 }
 
-export function computeTempo(sessionDates: string[], now = new Date()): Tempo {
+const round1 = (n: number) => Math.round(n * 10) / 10;
+
+/**
+ * The set of gym-calendar days inside [from, to] that a shield or the calendar
+ * has discounted, capped at MAX_PROTECTED_DAYS.
+ */
+function protectedDayKeys(from: number, to: number, opts: TempoOptions): Set<string> {
+  const keys = new Set<string>();
+
+  const addRange = (startMs: number, days: number) => {
+    for (let i = 0; i < days; i++) {
+      const at = startMs + i * DAY_MS;
+      if (at < from || at > to) continue;
+      keys.add(gymDayKey(new Date(at)));
+    }
+  };
+
+  for (const cover of opts.shieldCovers ?? []) {
+    const start = new Date(cover).getTime();
+    if (Number.isFinite(start)) addRange(start, SHIELD_COVERS_DAYS);
+  }
+
+  for (const w of opts.calendar ?? []) {
+    const start = new Date(w.startISO).getTime();
+    const end = new Date(`${w.endISO}T23:59:59`).getTime();
+    if (!Number.isFinite(start) || !Number.isFinite(end)) continue;
+    addRange(start, Math.floor((end - start) / DAY_MS) + 1);
+  }
+
+  // Deterministic truncation — sorted, so the same inputs always drop the same
+  // days rather than whichever the Set happened to yield first.
+  if (keys.size <= MAX_PROTECTED_DAYS) return keys;
+  return new Set(Array.from(keys).sort().slice(-MAX_PROTECTED_DAYS));
+}
+
+export function computeTempo(
+  sessionDates: string[],
+  now = new Date(),
+  opts: TempoOptions = {},
+): Tempo {
   const t = now.getTime();
   const times = sessionDates
     .map((d) => new Date(d).getTime())
     .filter((n) => Number.isFinite(n) && n <= t)
     .sort((a, b) => b - a);
 
-  const currentWindow = times.filter((n) => n >= t - WINDOW_DAYS * DAY_MS);
+  const windowStart = t - WINDOW_DAYS * DAY_MS;
+  const currentWindow = times.filter((n) => n >= windowStart);
   const priorWindow = times.filter(
-    (n) => n < t - WINDOW_DAYS * DAY_MS && n >= t - 2 * WINDOW_DAYS * DAY_MS,
+    (n) => n < windowStart && n >= t - 2 * WINDOW_DAYS * DAY_MS,
   );
 
   const weeks = WINDOW_DAYS / 7;
-  const current = Math.round((currentWindow.length / weeks) * 10) / 10;
-  const previous = Math.round((priorWindow.length / weeks) * 10) / 10;
-  const delta = Math.round((current - previous) * 10) / 10;
+  // The plain rate. Whatever protection does, it may never drag the number
+  // BELOW this.
+  const raw = currentWindow.length / weeks;
+
+  const protectedKeys = protectedDayKeys(windowStart, t, opts);
+  let current = raw;
+
+  if (protectedKeys.size > 0 && protectedKeys.size < WINDOW_DAYS) {
+    const effectiveDays = WINDOW_DAYS - protectedKeys.size;
+    const unprotectedSessions = currentWindow.filter(
+      (n) => !protectedKeys.has(gymDayKey(new Date(n))),
+    ).length;
+    const adjusted = unprotectedSessions / (effectiveDays / 7);
+
+    /*
+     * The guard that makes this honest.
+     *
+     * Shrinking the denominator raises the quotient, so the naive version of
+     * this feature hands a member a BIGGER number on the day they declare they
+     * are not training. That is worse than the sag it was meant to fix: the
+     * headline figure would reward staying home.
+     *
+     * A shield may hold the rate the member had built before the protected
+     * period, and no more. `baseline` is TEMPO as it stood the moment
+     * protection began; `adjusted` is capped to it, and the result can only
+     * move the number up from `raw` toward where it already was.
+     */
+    const firstProtected = Array.from(protectedKeys).sort()[0];
+    // Explicit Z. A bare "YYYY-MM-DDTHH:mm:ss" is parsed as RUNTIME-LOCAL, which
+    // would make the baseline — and therefore the member's headline number —
+    // depend on which machine rendered the page.
+    const baselineAt = new Date(`${firstProtected}T00:00:00Z`).getTime();
+    const baseline =
+      times.filter((n) => n < baselineAt && n >= baselineAt - WINDOW_DAYS * DAY_MS)
+        .length / weeks;
+
+    current = Math.max(raw, Math.min(adjusted, baseline));
+  }
+
+  const previous = round1(priorWindow.length / weeks);
+  const delta = round1(current - previous);
+  current = round1(current);
 
   const band = bandFor(current);
   const floor = bandFloor(band);
@@ -88,6 +195,7 @@ export function computeTempo(sessionDates: string[], now = new Date()): Tempo {
     sessions: currentWindow.length,
     daysSinceLast: times.length ? Math.floor((t - times[0]) / DAY_MS) : null,
     toHold,
+    protectedDays: protectedKeys.size,
   };
 }
 

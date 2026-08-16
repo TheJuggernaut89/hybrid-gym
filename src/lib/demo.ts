@@ -1,4 +1,11 @@
-import type { Bounty, Fighter, HomeSession, NutritionLog, WorkoutLog } from './types';
+import type {
+  Bounty,
+  Fighter,
+  HomeSession,
+  NutritionLog,
+  TrainingSession,
+  WorkoutLog,
+} from './types';
 import type { GymSlot, SlotDeclaration } from './slots';
 import type { TechniqueProgress } from './ladder';
 
@@ -68,6 +75,35 @@ export const DEMO_HOME_SESSIONS: HomeSession[] = [
   },
 ];
 
+/**
+ * Classes and floor work. The demo fighter has to look like a real member of a
+ * hybrid gym — mostly mat time and lifting, with the cardio console and the
+ * home drills as the minority. A demo built only from workout_logs and
+ * home_sessions quietly showed the app as it looked with this table missing.
+ */
+export const DEMO_TRAINING_SESSIONS: TrainingSession[] = [
+  {
+    id: 't1', fighter_id: DEMO_ID, session_type: 'combat', stat: 'craft',
+    duration_min: 60, rpe: 8, load_au: 480, label: 'Muay Thai — Coach Faiz',
+    created_at: iso(0),
+  },
+  {
+    id: 't2', fighter_id: DEMO_ID, session_type: 'lift', stat: 'strength',
+    duration_min: 55, rpe: 7, load_au: 385, label: 'Leg day',
+    created_at: iso(1),
+  },
+  {
+    id: 't3', fighter_id: DEMO_ID, session_type: 'class', stat: 'craft',
+    duration_min: 75, rpe: 7, load_au: 525, label: 'BJJ — Coach Ray',
+    created_at: iso(2),
+  },
+  {
+    id: 't4', fighter_id: DEMO_ID, session_type: 'conditioning', stat: 'engine',
+    duration_min: 30, rpe: 9, load_au: 270, label: 'Conditioning',
+    created_at: iso(4),
+  },
+];
+
 export const DEMO_NUTRITION: NutritionLog[] = [
   {
     id: 'n1', fighter_id: DEMO_ID, dish_name: 'Nasi Lemak (with fried chicken)',
@@ -121,6 +157,7 @@ export const DEMO_DECLARATIONS: SlotDeclaration[] = [
   {
     id: 'd1',
     gymSlotId: 'g1',
+    kind: 'class',
     className: 'Muay Thai',
     coachName: 'Coach Faiz',
     scheduledFor: new Date(Date.now() + 70 * 60_000).toISOString(),
@@ -132,6 +169,7 @@ export const DEMO_DECLARATIONS: SlotDeclaration[] = [
   {
     id: 'd0',
     gymSlotId: 'g5',
+    kind: 'class',
     className: 'BJJ Fundamentals',
     coachName: 'Coach Wei',
     scheduledFor: new Date(Date.now() - 26 * 3_600_000).toISOString(),
@@ -146,5 +184,9 @@ export const DEMO_BOUNTIES: Bounty[] = [
   { id: 'b1', code: 'WEEKLY_BURN', title: 'FURNACE PROTOCOL', description: 'Burn 2500 calories on gym equipment this week.', target_metric: 'calories', target_value: 2500, xp_reward: 600 },
   { id: 'b2', code: 'WEEKLY_MINUTES', title: 'TIME UNDER FIRE', description: 'Log 150 active minutes across any machine.', target_metric: 'active_minutes', target_value: 150, xp_reward: 450 },
   { id: 'b3', code: 'WEEKLY_SHADOW', title: 'SHADOW DISCIPLINE', description: 'Finish 5 form drills at home.', target_metric: 'home_sessions', target_value: 5, xp_reward: 350 },
-  { id: 'b4', code: 'STREAK_SEVEN', title: 'SEVEN DAY WAR', description: 'Keep a 7-day active streak alive.', target_metric: 'streak', target_value: 7, xp_reward: 700 },
+  // A load bounty, reachable from any modality — the mats, the floor or a
+  // machine. Replaces STREAK_SEVEN, which was the largest reward in this set
+  // and paid 700 XP for seven consecutive training days: precisely the pattern
+  // computeLoad flags as monotonous and vetoes every upsell for.
+  { id: 'b4', code: 'WEEKLY_LOAD', title: 'TOTAL TONNAGE', description: 'Bank 2000 AU of session load this week — mats, floor or machines.', target_metric: 'load', target_value: 2000, xp_reward: 700 },
 ];

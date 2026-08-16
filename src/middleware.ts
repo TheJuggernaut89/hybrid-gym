@@ -1,7 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
-const PROTECTED = ['/now', '/hud', '/fuel', '/scanner', '/home-base', '/brag', '/onboarding'];
+const PROTECTED = [
+  '/now', '/hud', '/fuel', '/scanner', '/home-base', '/brag', '/onboarding',
+  // Auth only. The coach check itself is inside coach_roster(), because a
+  // middleware role check is a redirect and a redirect is not a permission.
+  '/roster',
+];
 
 export async function middleware(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();

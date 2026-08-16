@@ -74,10 +74,30 @@ export function sessionTypeForClass(className: string): SessionType {
   if (match('yoga', 'mobility', 'stretch', 'recovery', 'pilates')) return sessionTypeFor('mobility')!;
   if (match('muay', 'bjj', 'boxing', 'grappl', 'mma', 'spar', 'wrestl', 'judo', 'silat', 'kickbox'))
     return sessionTypeFor('combat')!;
-  if (match('strength', 'lift', 'weight', 'barbell', 'powerlift')) return sessionTypeFor('lift')!;
+  if (match('strength', 'lift', 'weight', 'barbell', 'powerlift', 'floor')) return sessionTypeFor('lift')!;
   if (match('olympic', 'plyo', 'sprint', 'explosive')) return sessionTypeFor('power')!;
   if (match('technique', 'skill', 'drill', 'fundamental')) return sessionTypeFor('skill')!;
+  // Cardio had no keywords at all, so "Cardio — bike" fell through to 'class'
+  // and was attributed to craft instead of engine — which then skewed the
+  // modality mix and therefore what the app recommended next.
+  if (match('cardio', 'bike', 'row', 'tread', 'run', 'erg', 'stair', 'elliptical', 'condition'))
+    return sessionTypeFor('conditioning')!;
   return sessionTypeFor('class')!;
+}
+
+/**
+ * Session type for a declared slot, given what kind of slot it was.
+ *
+ * A floor or cardio declaration carries a label the member did not write, so
+ * keyword-matching it is guesswork with a known answer available.
+ */
+export function sessionTypeForDeclaration(
+  kind: 'class' | 'floor' | 'cardio',
+  className: string,
+): SessionType {
+  if (kind === 'floor') return sessionTypeFor('lift')!;
+  if (kind === 'cardio') return sessionTypeFor('conditioning')!;
+  return sessionTypeForClass(className);
 }
 
 /* ── the load unit ────────────────────────────────────────────────────── */

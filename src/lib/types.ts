@@ -68,6 +68,25 @@ export interface HomeSession {
   created_at: string;
 }
 
+/**
+ * The universal session record — a class, a lift, a round on the mats.
+ *
+ * This is the only table that covers the members who never take a class, which
+ * is most of them. Anything that reads "did this person train" must read it.
+ */
+export interface TrainingSession {
+  id: string;
+  fighter_id: string;
+  session_type: string;
+  stat: StatKey;
+  duration_min: number;
+  rpe: number;
+  /** Session-RPE: duration x rpe. The app's cross-modality currency. */
+  load_au: number;
+  label: string | null;
+  created_at: string;
+}
+
 export interface NutritionLog {
   id: string;
   fighter_id: string;
@@ -93,8 +112,14 @@ export type BountyMetric =
   | 'active_minutes'
   | 'sessions'
   | 'home_sessions'
-  | 'accuracy_avg'
-  | 'streak';
+  | 'accuracy_avg';
+/*
+ * 'streak' was removed. `award_xp` advanced streak_count only when the UTC
+ * calendar date advanced, so an evening session followed by a 07:00 class the
+ * next morning read as the same day and the counter never moved. STREAK_SEVEN
+ * was the largest bounty in the seed set at 700 XP and was close to unwinnable
+ * for anyone who trains mornings. Migration 012 deactivates the row.
+ */
 
 export interface Bounty {
   id: string;

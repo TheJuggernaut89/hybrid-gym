@@ -153,12 +153,21 @@ export function buildOffers(input: OfferInput): Offer[] {
       penat: 'you keep arriving spent',
       sakit: 'you have been unwell',
       family: 'family commitments keep landing',
+      penuh: 'the class was full when you got there',
     };
+
+    // `penuh` is the gym's fault, not the member's. Left unmapped it fell
+    // through to "you have declined it 3 times because of the same reason →
+    // move to a different time", which blames someone who turned up and was
+    // sent home. Same data, opposite subject.
+    const gymSide = topReason === 'penuh';
     offers.push({
       kind: 'schedule_mismatch',
-      headline: 'This slot is not working',
-      because: `You have declined it ${topCount} times because ${why[topReason] ?? 'of the same reason'}.`,
-      action: 'Move to a different time',
+      headline: gymSide ? 'That class keeps filling up' : 'This slot is not working',
+      because: gymSide
+        ? `You have been turned away ${topCount} times because ${why[topReason]}.`
+        : `You have declined it ${topCount} times because ${why[topReason] ?? 'of the same reason'}.`,
+      action: gymSide ? 'Find a quieter session' : 'Move to a different time',
       score: 88,
       paid: false,
     });

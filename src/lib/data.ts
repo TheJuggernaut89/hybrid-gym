@@ -9,6 +9,7 @@ import {
   DEMO_HOME_SESSIONS,
   DEMO_NUTRITION,
   DEMO_TECHNIQUE_PROGRESS,
+  DEMO_TRAINING_SESSIONS,
   DEMO_WORKOUTS,
 } from './demo';
 import type { GymSlot, SlotDeclaration } from './slots';
@@ -18,6 +19,7 @@ import type {
   Fighter,
   HomeSession,
   NutritionLog,
+  TrainingSession,
   WorkoutLog,
 } from './types';
 
@@ -26,6 +28,13 @@ export interface HudSnapshot {
   fighter: Fighter;
   workouts: WorkoutLog[];
   homeSessions: HomeSession[];
+  /**
+   * Classes, lifts and mat time. Omitted from this snapshot until now, which
+   * meant every screen fed by it — the combat log, the bounties, the activity
+   * multiplier behind the macro targets — behaved as if a member who only
+   * attends classes had never trained.
+   */
+  trainingSessions: TrainingSession[];
   nutrition: NutritionLog[];
   bounties: Bounty[];
 }
@@ -73,6 +82,12 @@ export interface NowSnapshot {
   sessionDates: string[];
   totalSessions: number;
   shieldsSpent: number;
+  /**
+   * `covers_date` of every spent shield — the first day of each protected week.
+   * TEMPO needs the dates, not just the count: a shield that does not change a
+   * number the member can see is an acknowledgement, not a mechanic.
+   */
+  shieldCovers: string[];
   declarations: SlotDeclaration[];
   gymSlots: GymSlot[];
   /** Every session on the shared load scale, for computeLoad/modalityMix. */
@@ -114,6 +129,7 @@ export async function getNowSnapshot(): Promise<NowSnapshot | null> {
       sessionDates,
       totalSessions: sessionDates.length,
       shieldsSpent: 1,
+      shieldCovers: [],
       declarations: DEMO_DECLARATIONS,
       gymSlots: DEMO_GYM_SLOTS,
       loads,
@@ -157,7 +173,9 @@ export async function getNowSnapshot(): Promise<NowSnapshot | null> {
         .gte('scheduled_for', new Date(Date.now() - 28 * 86_400_000).toISOString())
         .order('scheduled_for'),
       supabase.from('gym_slots').select('*').eq('active', true).order('day_of_week'),
-      supabase.from('shield_spends').select('id', { count: 'exact', head: true }).eq('fighter_id', user.id),
+      // covers_date, not just a count: computeTempo discounts the week each
+      // spend names, so it needs the dates themselves.
+      supabase.from('shield_spends').select('covers_date').eq('fighter_id', user.id),
     ]);
 
   const fighter = fighterRes.data as Fighter | null;
@@ -200,7 +218,10 @@ export async function getNowSnapshot(): Promise<NowSnapshot | null> {
     fighter,
     sessionDates,
     totalSessions: sessionDates.length,
-    shieldsSpent: spendRes.count ?? 0,
+    shieldsSpent: (spendRes.data ?? []).length,
+    shieldCovers: (spendRes.data ?? [])
+      .map((r) => String((r as { covers_date?: unknown }).covers_date ?? ''))
+      .filter(Boolean),
     declarations,
     gymSlots: (slotRes.data ?? []).map(mapGymSlot),
     loads,
@@ -213,14 +234,118 @@ export async function getNowSnapshot(): Promise<NowSnapshot | null> {
   };
 }
 
-/** Honoured class declarations inside the trailing 7 days. */
+/**
+ * Honoured CLASS declarations inside the trailing 7 days.
+ *
+ * The `kind` filter is load-bearing. This number feeds `classesUsed` into the
+ * tier-upgrade offer, which fires when a member has consumed the class
+ * allowance on their membership. Counting every honoured declaration would
+ * mean a lifter who declared three floor sessions got told he had used up his
+ * classes and shown an upsell for a thing he does not do.
+ */
 function countClassesThisWeek(declarations: SlotDeclaration[]): number {
   const since = Date.now() - 7 * 86_400_000;
   return declarations.filter(
     (d) =>
+      d.kind === 'class' &&
       (d.status === 'honoured' || d.status === 'downgraded') &&
       new Date(d.scheduledFor).getTime() >= since,
   ).length;
+}
+
+/**
+ * Nicknames of opted-in members who have declared sessions in a window,
+ * keyed by ISO start time.
+ *
+ * The cohort floor lives in the RPC, not here — a client-side threshold is a
+ * suggestion. Below it the RPC returns no rows for that session at all, which
+ * is why this map is sparse rather than full of empty arrays.
+ */
+export async function getGymMates(
+  from: Date,
+  to: Date,
+): Promise<Record<string, string[]>> {
+  if (!isSupabaseConfigured) return {};
+  const supabase = createClient();
+  if (!supabase) return {};
+
+  const { data, error } = await supabase.rpc('gym_mates', {
+    p_from: from.toISOString(),
+    p_to: to.toISOString(),
+  });
+  // Non-fatal by design: THE NOD is an embellishment on the declare list, and
+  // failing the whole page because a social nicety errored would be absurd.
+  if (error || !data) return {};
+
+  const out: Record<string, string[]> = {};
+  for (const r of data as Row[]) {
+    const key = new Date(String(r.scheduled_for)).toISOString();
+    const nick = String(r.nickname ?? '').trim();
+    if (!nick) continue;
+    (out[key] ??= []).push(nick);
+  }
+  return out;
+}
+
+export interface Occupancy {
+  taken: number;
+  capacity: number;
+}
+
+/**
+ * Seat counts for capped classes, keyed by ISO start time.
+ *
+ * Sparse: a class with no capacity set has no occurrence row and appears here
+ * not at all, which is the inert default.
+ */
+export async function getOccupancy(
+  from: Date,
+  to: Date,
+): Promise<Record<string, Occupancy>> {
+  if (!isSupabaseConfigured) return {};
+  const supabase = createClient();
+  if (!supabase) return {};
+
+  const { data, error } = await supabase
+    .from('class_occurrences')
+    .select('gym_slot_id, starts_at, capacity, taken')
+    .gte('starts_at', from.toISOString())
+    .lte('starts_at', to.toISOString());
+
+  if (error || !data) return {};
+
+  const out: Record<string, Occupancy> = {};
+  for (const r of data as Row[]) {
+    const key = `${String(r.gym_slot_id)}@${new Date(String(r.starts_at)).toISOString()}`;
+    out[key] = { taken: Number(r.taken) || 0, capacity: Number(r.capacity) || 0 };
+  }
+  return out;
+}
+
+export interface RosterEntry {
+  fighterId: string;
+  name: string;
+  daysSinceLast: number | null;
+  sessions28d: number;
+  memberSince: string;
+}
+
+/** Null when the caller is not a coach — the RPC refuses, and that is the answer. */
+export async function getCoachRoster(): Promise<RosterEntry[] | null> {
+  if (!isSupabaseConfigured) return null;
+  const supabase = createClient();
+  if (!supabase) return null;
+
+  const { data, error } = await supabase.rpc('coach_roster');
+  if (error || !data) return null;
+
+  return (data as Row[]).map((r) => ({
+    fighterId: String(r.fighter_id),
+    name: String(r.name),
+    daysSinceLast: r.days_since_last == null ? null : Number(r.days_since_last),
+    sessions28d: Number(r.sessions_28d) || 0,
+    memberSince: String(r.member_since ?? ''),
+  }));
 }
 
 /** Postgres rows arrive snake_cased and loosely typed; narrow at the boundary. */
@@ -230,8 +355,9 @@ function mapDeclaration(r: Row): SlotDeclaration {
   return {
     id: String(r.id),
     gymSlotId: (r.gym_slot_id as string | null) ?? null,
+    kind: ((r.kind as SlotDeclaration['kind']) ?? 'class'),
     className: String(r.class_name),
-    coachName: String(r.coach_name),
+    coachName: r.coach_name == null ? null : String(r.coach_name),
     scheduledFor: String(r.scheduled_for),
     durationMin: Number(r.duration_min),
     status: r.status as SlotDeclaration['status'],
@@ -310,12 +436,24 @@ export async function getDeclaredConditions(): Promise<string[]> {
   return Array.isArray(raw) ? raw.map(String) : [];
 }
 
-/** Sessions logged in the trailing 7 days — drives the activity multiplier. */
+/**
+ * Sessions logged in the trailing 7 days — drives the activity multiplier that
+ * sets the macro targets.
+ *
+ * training_sessions was missing from this sum, so a member whose training is
+ * classes and the weights floor — the majority — was counted as sedentary and
+ * fed roughly 500 kcal/day short of maintenance. The one modality the gym most
+ * wants people doing was the one the calculation could not see.
+ */
 export function sessionsThisWeek(snapshot: HudSnapshot): number {
   const since = Date.now() - 7 * 86_400_000;
   const count = <T extends { created_at: string }>(rows: T[]) =>
     rows.filter((r) => new Date(r.created_at).getTime() >= since).length;
-  return count(snapshot.workouts) + count(snapshot.homeSessions);
+  return (
+    count(snapshot.workouts) +
+    count(snapshot.homeSessions) +
+    count(snapshot.trainingSessions)
+  );
 }
 
 export async function getHudSnapshot(): Promise<HudSnapshot | null> {
@@ -325,6 +463,7 @@ export async function getHudSnapshot(): Promise<HudSnapshot | null> {
       fighter: DEMO_FIGHTER,
       workouts: DEMO_WORKOUTS,
       homeSessions: DEMO_HOME_SESSIONS,
+      trainingSessions: DEMO_TRAINING_SESSIONS,
       nutrition: DEMO_NUTRITION,
       bounties: DEMO_BOUNTIES,
     };
@@ -337,7 +476,8 @@ export async function getHudSnapshot(): Promise<HudSnapshot | null> {
   const user = userData.user;
   if (!user) return null;
 
-  const [fighterRes, workoutRes, homeRes, nutritionRes, bountyRes] = await Promise.all([
+  const [fighterRes, workoutRes, homeRes, trainingRes, nutritionRes, bountyRes] =
+    await Promise.all([
     supabase.from('fighters').select('*').eq('id', user.id).maybeSingle(),
     supabase
       .from('workout_logs')
@@ -347,6 +487,12 @@ export async function getHudSnapshot(): Promise<HudSnapshot | null> {
       .limit(50),
     supabase
       .from('home_sessions')
+      .select('*')
+      .eq('fighter_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(50),
+    supabase
+      .from('training_sessions')
       .select('*')
       .eq('fighter_id', user.id)
       .order('created_at', { ascending: false })
@@ -368,6 +514,7 @@ export async function getHudSnapshot(): Promise<HudSnapshot | null> {
     fighter,
     workouts: (workoutRes.data ?? []) as WorkoutLog[],
     homeSessions: (homeRes.data ?? []) as HomeSession[],
+    trainingSessions: (trainingRes.data ?? []) as TrainingSession[],
     nutrition: (nutritionRes.data ?? []) as NutritionLog[],
     bounties: (bountyRes.data ?? []) as Bounty[],
   };

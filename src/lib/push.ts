@@ -146,29 +146,13 @@ export async function unsubscribeFromPush(): Promise<SubscribeResult> {
   }
 }
 
-/**
- * The reminder copy.
+/*
+ * reminderCopy() used to live here, duplicating the copy in the Edge Function
+ * at supabase/functions/slot-reminders/index.ts, with a comment on each asking
+ * whoever edited one to remember the other.
  *
- * Kept pure so it is testable, and written to solve the friction rather than
- * to moralise — the phase machine already knows how far out the member is, and
- * a notification that says "don't skip!" is one the member turns off.
+ * Nothing imported it. Pushes are sent server-side by the scheduled function
+ * and never from the browser, so this copy was unreachable — a standing
+ * obligation to maintain two things in sync, one of which did nothing. The
+ * sender owns the copy now.
  */
-export function reminderCopy(input: {
-  phase: 'approaching' | 'imminent';
-  className: string;
-  coachName: string;
-  minutesOut: number;
-}): { title: string; body: string } {
-  const { phase, className, coachName, minutesOut } = input;
-
-  if (phase === 'imminent') {
-    return {
-      title: `${className} in ${minutesOut} min`,
-      body: `${coachName} is expecting you. Bag packed?`,
-    };
-  }
-  return {
-    title: `${className} in ${Math.round(minutesOut / 60)}h${minutesOut % 60 ? ` ${minutesOut % 60}m` : ''}`,
-    body: `You booked it. Leave by the time you planned and the traffic is somebody else's problem.`,
-  };
-}

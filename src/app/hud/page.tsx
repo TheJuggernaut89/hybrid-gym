@@ -14,11 +14,21 @@ import { Stat } from '@/components/ui/stat';
 import { SegmentMeter, UnitTag, HazardBar } from '@/components/ui/industrial';
 import { RadarChart } from '@/components/hud/radar-chart';
 import { BullCrest } from '@/components/hud/crest';
-import { StreakTracker } from '@/components/hud/streak-tracker';
 import { BountyList } from '@/components/hud/bounty-list';
 
 export const metadata = { title: 'HUD // HYBRID COMBATIVE' };
 export const dynamic = 'force-dynamic';
+
+/** Where a session happened, in the gym's own words. */
+const SESSION_KIND: Record<string, string> = {
+  combat: 'MAT',
+  class: 'MAT',
+  skill: 'MAT',
+  lift: 'FLOOR',
+  power: 'FLOOR',
+  conditioning: 'ENGINE',
+  mobility: 'RECOVER',
+};
 
 export default async function HudPage() {
   const snapshot = await getHudSnapshot();
@@ -30,12 +40,19 @@ export default async function HudPage() {
     redirect('/onboarding');
   }
 
-  const { fighter, workouts, homeSessions, bounties, demo } = snapshot;
+  const { fighter, workouts, homeSessions, trainingSessions, bounties, demo } = snapshot;
   if (isSupabaseConfigured && !fighter.onboarded) redirect('/onboarding');
 
   const progress = levelProgress(fighter.total_xp);
   const axes = radarAxes(fighter);
-  const bountyProgress = computeBountyProgress(bounties, fighter, workouts, homeSessions);
+  // trainingSessions was omitted here, so every load- and session-counting
+  // bounty read zero for a member who trains by turning up to class.
+  const bountyProgress = computeBountyProgress(
+    bounties,
+    workouts,
+    homeSessions,
+    trainingSessions,
+  );
 
   const feed = [
     ...workouts.map((w) => ({
@@ -57,6 +74,18 @@ export default async function HudPage() {
       )}% form`,
       xp: h.xp_awarded,
       comment: h.corrective_action,
+    })),
+    // The mats and the weights floor. Absent from this list until now, so the
+    // members who train the way the gym most wants them to — by turning up —
+    // saw an empty log.
+    ...trainingSessions.map((t) => ({
+      id: t.id,
+      at: t.created_at,
+      kind: SESSION_KIND[t.session_type] ?? 'FLOOR',
+      title: t.label ?? t.session_type,
+      detail: `${t.duration_min} min · RPE ${t.rpe} · ${t.load_au} AU`,
+      xp: t.load_au,
+      comment: null,
     })),
   ]
     .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
@@ -174,7 +203,7 @@ export default async function HudPage() {
           >
             {feed.length === 0 ? (
               <p className="p-3 font-sans text-read text-dim">
-                Nothing logged yet. Go scan a machine.
+                Nothing logged yet. Take a class, lift something, or scan a machine.
               </p>
             ) : (
               <ul className="divide-y divide-edge">

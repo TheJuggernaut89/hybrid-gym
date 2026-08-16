@@ -42,7 +42,6 @@ export default async function BragPage() {
             level: fighter.level,
             totalXp: fighter.total_xp,
             levelPct: progress.pct,
-            streak: fighter.streak_count,
             tierName: crest.name,
             tierColor: crest.color,
             weekCalories: Math.round(

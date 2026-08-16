@@ -12,7 +12,6 @@ export interface BragCard {
   level: number;
   totalXp: number;
   levelPct: number;
-  streak: number;
   tierName: string;
   tierColor: string;
   weekCalories: number;
@@ -52,12 +51,18 @@ const RED = '#EF4444';
 const GREEN = '#22C55E';
 const EDGE = '#27272A';
 
-type Layout = 'levelup' | 'weekly' | 'streak';
+/*
+ * A third layout, STREAK, drew a giant consecutive-day count. It is gone with
+ * the rest of the streak machinery: the number it rendered was produced by
+ * UTC-date arithmetic in a UTC+8 city and sat at 1-3 for members training four
+ * times a week. A brag card is the worst place to publish a number that
+ * understates the person sharing it.
+ */
+type Layout = 'levelup' | 'weekly';
 
 const LAYOUTS: Array<{ id: Layout; label: string; sub: string }> = [
   { id: 'levelup', label: 'LEVEL UP', sub: 'Rank + total XP' },
   { id: 'weekly', label: 'WEEK HAUL', sub: 'Last 7 days' },
-  { id: 'streak', label: 'STREAK', sub: 'Consecutive days' },
 ];
 
 export function BragStudio({ card }: { card: BragCard }) {
@@ -192,33 +197,6 @@ export function BragStudio({ card }: { card: BragCard }) {
         ['DRILLS', String(card.weekDrills), GREEN],
         ['BEST FORM', `${card.bestForm}%`, GOLD],
       ], MONO_FAMILY);
-    }
-
-    if (layout === 'streak') {
-      ctx.fillStyle = '#52525B';
-      ctx.font = `500 30px ${MONO_FAMILY}`;
-      ctx.fillText('CONSECUTIVE DAYS', W / 2, heroY - 160);
-
-      ctx.fillStyle = card.streak > 0 ? RED : '#3F3F46';
-      ctx.font = `700 340px ${DISPLAY_FAMILY}`;
-      ctx.fillText(String(card.streak), W / 2, heroY + 90);
-
-      ctx.fillStyle = '#A1A1AA';
-      ctx.font = `500 36px ${MONO_FAMILY}`;
-      ctx.fillText('DAY STREAK / STILL ALIVE', W / 2, heroY + 160);
-
-      const cells = Math.min(Math.max(card.streak, 1), 14);
-      const gap = 12;
-      const totalW = W - 360;
-      const cellW = (totalW - gap * (cells - 1)) / cells;
-      for (let i = 0; i < cells; i += 1) {
-        const x = 180 + i * (cellW + gap);
-        ctx.fillStyle = 'rgba(239,68,68,0.3)';
-        ctx.fillRect(x, heroY + 220, cellW, 60);
-        ctx.strokeStyle = RED;
-        ctx.lineWidth = 3;
-        ctx.strokeRect(x, heroY + 220, cellW, 60);
-      }
     }
 
     // footer

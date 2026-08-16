@@ -42,11 +42,75 @@ exist` — leaving a half-built database.
 | `006_push_subscriptions.sql` | Push subscription storage + `due_slot_reminders()` |
 | `007_class_quota.sql` | Per-member class allowance for the tier-upgrade offer |
 | `008_lock_down_reminder_rpc.sql` | **Security fix** — stops `anon` reading every member's push credentials |
+| `009_fix_declaration_timezone.sql` | Repairs declarations stored 8 hours off. Prints anything it could not explain |
+| `010_xp_awarded_once.sql` | `log_session` no longer pays for the same session on every replay |
+| `011_send_each_reminder_once.sql` | Adds `slot_notifications`; each reminder now sends once per device |
+| `012_retire_the_streak.sql` | `award_xp` v5 drops the streak and moves off UTC dates; retires `STREAK_SEVEN`; `spend_shield` covers a week and stops burning shields for nothing |
+| `013_penuh_decline_reason.sql` | Adds `penuh` — the gym was full. Replaces the inline CHECK, which `if not exists` made unreachable |
+| `014_floor_declarations.sql` | `coach_name` nullable, `kind` column. THE SLOT works for the weights floor |
+| `015_the_nod.sql` | `nickname` + `visible_to_gym`, and `gym_mates()` with a cohort floor |
+| `016_writes_go_through_functions.sql` | **Security** — members lose INSERT/UPDATE/DELETE on declarations, shields and sessions; `award_xp` gains per-call and per-day ceilings |
+| `017_coach_roster.sql` | `role` column and `coach_roster()` |
+| `018_class_capacity.sql` | Nullable `gym_slots.capacity`, `class_occurrences`, seat claim inside `declare_slot` |
 
 > **004 renames columns** (`striking_xp → craft_xp`, `stamina_xp → engine_xp`,
 > `agility_xp → power_xp`). It is guarded by `information_schema` checks so it is
 > safe to re-run, but if you have an existing deploy, take a backup first. The
 > app code will not work against pre-004 columns.
+
+> **009 must run with the reminder cron paused, and only after the matching app
+> deploy.** It shifts live declarations backwards by 8 hours. If the sender is
+> running while rows move, it can fire against a time that is briefly wrong; if
+> the old app code is still live, it will write fresh 8-hour-off rows behind you.
+>
+> ```sql
+> select cron.unschedule('slot-reminders');
+> ```
+>
+> Deploy the app, run 009, 010 and 011, then re-create the job from §6.
+>
+> 009 ends with a report of `declared` rows that still disagree with the
+> timetable. It should be empty. Rows that appear there were not caused by this
+> bug — a hand-edited timetable, or a declaration with no `gym_slot_id` — and
+> need looking at rather than shifting.
+>
+> Run 009 **before** 014. Once floor declarations exist, 009's report lists
+> every one of them as unexplained, because a floor session legitimately has no
+> `gym_slot_id`.
+
+> **012 must run after 010.** Migration 010's `log_session` calls
+> `award_xp(uuid, text, int, boolean)`, and 012 redefines that function. The
+> four-argument signature is preserved deliberately — changing it would leave
+> `log_session` calling something that no longer exists.
+
+> **016 removes table-level write access from members.** Anything that writes
+> declarations, shields or training sessions must go through `declare_slot`,
+> `resolve_slot` or `log_session` afterwards. The app already does; a bookmarked
+> REST call will not. Verify:
+>
+> ```sql
+> select table_name, privilege_type
+> from information_schema.role_table_grants
+> where grantee = 'authenticated'
+>   and table_name in ('slot_declarations','shield_spends','training_sessions')
+> order by 1, 2;
+> ```
+>
+> Expect `SELECT` only.
+
+**Making someone a coach** — there is deliberately no in-app path:
+
+```sql
+update public.fighters set role = 'coach' where id = '<uuid>';
+```
+
+**Capping a class** — leave this null until the declaration counts justify it.
+Capacity counts declarations, not bodies, so it can tell someone a physically
+full class has space:
+
+```sql
+update public.gym_slots set capacity = 20 where code = 'THU-BJJ-2000';
+```
 
 ---
 
